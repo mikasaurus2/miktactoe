@@ -4,25 +4,35 @@
 //
 use crate::board::{Board, BoardState};
 use crate::common::{Marker, Move};
-use crate::player::Player;
+use crate::player::{Player, RandomComputer};
 
 pub struct Game {
-    player1: Player,
-    player2: Player,
+    // Human players
+    //player1: Player,
+    //player2: Player,
+    // Computer players
+    player1: RandomComputer,
+    player2: RandomComputer,
     board: Board,
 }
 
 impl Game {
     pub fn new() -> Game {
         Game {
-            player1: Player {
-                name: String::from("Mike"),
-                marker: Marker::X,
-            },
-            player2: Player {
-                name: String::from("Steph"),
-                marker: Marker::O,
-            },
+            // Human players
+            //
+            //player1: Player {
+            //    name: String::from("Mike"),
+            //    marker: Marker::X,
+            //},
+            //player2: Player {
+            //    name: String::from("Steph"),
+            //    marker: Marker::X,
+            //},
+
+            // Computer players
+            player1: RandomComputer::new(String::from("Computron"), Marker::X),
+            player2: RandomComputer::new(String::from("Hal9000"), Marker::O),
             board: Board::new(),
         }
     }
@@ -72,7 +82,7 @@ impl Game {
                 .check_board_state(&player_move, &self.player2.marker)
             {
                 BoardState::Win => {
-                    println!("{} won!", self.player1.name);
+                    println!("{} won!", self.player2.name);
                     break;
                 }
                 BoardState::Tie => {

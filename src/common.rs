@@ -4,9 +4,10 @@ pub enum Marker {
     O,
 }
 
+#[derive(Debug, Copy, Clone)]
 pub struct CellCoord {
-    pub column: usize,
     pub row: usize,
+    pub column: usize,
 }
 
 #[derive(Debug, PartialEq)]

@@ -36,7 +36,6 @@ pub struct RandomComputer {
     pub name: String,
     pub marker: Marker,
     move_set: Vec<CellCoord>,
-    move_index: usize,
 }
 
 impl RandomComputer {
@@ -56,7 +55,6 @@ impl RandomComputer {
             name,
             marker,
             move_set,
-            move_index: 0,
         }
     }
 
@@ -66,18 +64,11 @@ impl RandomComputer {
         // Use a sleep here so it seems like the computer is thinking a bit.
         thread::sleep(time::Duration::from_secs(1));
 
-        let next_move = self.move_set.get(self.move_index).unwrap_or_else(|| {
+        self.move_set.pop().unwrap_or_else(|| {
             panic!(
                 "{} ran out of generated moves. You shouldn't need this many.",
                 self.name
             )
-        });
-
-        self.move_index += 1;
-
-        // Note that we have to dereference next_move here because the vector's
-        // get() method above returns an Option<&CellCoord>. So next_move, if valid,
-        // is actually a reference.
-        *next_move
+        })
     }
 }

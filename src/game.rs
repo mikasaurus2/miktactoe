@@ -3,8 +3,8 @@
 //mod player;
 //
 use crate::board::{Board, BoardState};
-use crate::common::{Marker, Move};
-use crate::player::{Player, RandomComputer};
+use crate::common::Marker;
+use crate::player::RandomComputer;
 
 pub struct Game {
     // Human players
@@ -40,15 +40,7 @@ impl Game {
     pub fn run(&mut self) {
         self.board.display();
         loop {
-            let mut player_move = {
-                let mut player_move = self.player1.get_move();
-                let mut move_validation = self.board.validate_move(&player_move);
-                while let Move::Invalid = move_validation {
-                    player_move = self.player1.get_move();
-                    move_validation = self.board.validate_move(&player_move);
-                }
-                player_move
-            };
+            let mut player_move = self.player1.get_valid_move(&self.board);
             self.board.place_marker(&player_move, &self.player1.marker);
             self.board.display();
             match self
@@ -66,15 +58,7 @@ impl Game {
                 BoardState::Playing => (),
             }
 
-            player_move = {
-                let mut player_move = self.player2.get_move();
-                let mut move_validation = self.board.validate_move(&player_move);
-                while let Move::Invalid = move_validation {
-                    player_move = self.player2.get_move();
-                    move_validation = self.board.validate_move(&player_move);
-                }
-                player_move
-            };
+            player_move = self.player2.get_valid_move(&self.board);
             self.board.place_marker(&player_move, &self.player2.marker);
             self.board.display();
             match self

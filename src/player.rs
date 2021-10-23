@@ -1,3 +1,4 @@
+use crate::board::Board;
 use crate::common::*;
 use rand::seq::SliceRandom;
 use rand::thread_rng;
@@ -10,6 +11,7 @@ pub struct Player {
 }
 
 impl Player {
+    #[allow(dead_code)]
     pub fn get_move(&self) -> CellCoord {
         let mut input = String::new();
         println!("{}'s turn.", self.name);
@@ -58,17 +60,27 @@ impl RandomComputer {
         }
     }
 
-    pub fn get_move(&mut self) -> CellCoord {
+    // The computer should be smart enough to always make valid moves. Initially,
+    // we did move validation at the game level, but we can do that here instead
+    // by providing a reference to the board as a method parameter. We can then
+    // invoke validate_move().
+    pub fn get_valid_move(&mut self, board: &Board) -> CellCoord {
         println!("{}'s turn.", self.name);
 
         // Use a sleep here so it seems like the computer is thinking a bit.
         thread::sleep(time::Duration::from_secs(1));
 
-        self.move_set.pop().unwrap_or_else(|| {
-            panic!(
-                "{} ran out of generated moves. You shouldn't need this many.",
-                self.name
-            )
-        })
+        loop {
+            let player_move = self.move_set.pop().unwrap_or_else(|| {
+                panic!(
+                    "{} ran out of generated moves. You shouldn't need this many.",
+                    self.name
+                )
+            });
+
+            if let Move::Valid = board.validate_move(&player_move) {
+                break player_move;
+            }
+        }
     }
 }

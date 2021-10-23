@@ -45,7 +45,7 @@ impl Board {
     pub fn validate_move(&self, cell_coord: &CellCoord) -> Move {
         // We only check the upper bound, because column and row are usize,
         // which is always >= 0.
-        if cell_coord.column <= 3 && cell_coord.row <= 3 {
+        if cell_coord.column <= 2 && cell_coord.row <= 2 {
             if let '_' = self.cells[cell_coord.row][cell_coord.column] {
                 Move::Valid
             } else {
@@ -120,5 +120,104 @@ impl Board {
         }
 
         false
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    // Note that this test module is an inner module to the board module
+    // that is this file. So, to use the Board implementation code, we need
+    // to bring that parent module into scope for our test module.
+    use super::*;
+
+    #[test]
+    fn checks_row_win() {
+        let marker = Marker::X;
+        let mut board = Board::new();
+        board.place_marker(&CellCoord { row: 0, column: 0 }, &marker);
+        board.place_marker(&CellCoord { row: 0, column: 1 }, &marker);
+        board.place_marker(&CellCoord { row: 0, column: 2 }, &marker);
+        assert!(board.check_win(&CellCoord { row: 0, column: 2 }, &marker));
+    }
+
+    #[test]
+    fn checks_column_win() {
+        let marker = Marker::X;
+        let mut board = Board::new();
+        board.place_marker(&CellCoord { row: 0, column: 0 }, &marker);
+        board.place_marker(&CellCoord { row: 1, column: 0 }, &marker);
+        board.place_marker(&CellCoord { row: 2, column: 0 }, &marker);
+        assert!(board.check_win(&CellCoord { row: 2, column: 0 }, &marker));
+    }
+
+    #[test]
+    fn checks_row_not_win() {
+        let mut board = Board::new();
+        board.place_marker(&CellCoord { row: 0, column: 0 }, &Marker::X);
+        assert!(!board.check_win(&CellCoord { row: 0, column: 0 }, &Marker::X));
+        board.place_marker(&CellCoord { row: 0, column: 1 }, &Marker::X);
+        assert!(!board.check_win(&CellCoord { row: 0, column: 1 }, &Marker::X));
+        board.place_marker(&CellCoord { row: 0, column: 2 }, &Marker::O);
+        assert!(!board.check_win(&CellCoord { row: 0, column: 2 }, &Marker::O));
+    }
+
+    #[test]
+    fn checks_column_not_win() {
+        let mut board = Board::new();
+        board.place_marker(&CellCoord { row: 0, column: 0 }, &Marker::X);
+        assert!(!board.check_win(&CellCoord { row: 0, column: 0 }, &Marker::X));
+        board.place_marker(&CellCoord { row: 1, column: 0 }, &Marker::X);
+        assert!(!board.check_win(&CellCoord { row: 1, column: 0 }, &Marker::X));
+        board.place_marker(&CellCoord { row: 2, column: 0 }, &Marker::O);
+        assert!(!board.check_win(&CellCoord { row: 2, column: 0 }, &Marker::O));
+    }
+
+    #[test]
+    fn checks_diag_win() {
+        let marker = Marker::X;
+        let mut board = Board::new();
+        board.place_marker(&CellCoord { row: 0, column: 0 }, &marker);
+        assert!(!board.check_win(&CellCoord { row: 0, column: 0 }, &marker));
+        board.place_marker(&CellCoord { row: 1, column: 1 }, &marker);
+        assert!(!board.check_win(&CellCoord { row: 1, column: 1 }, &marker));
+        board.place_marker(&CellCoord { row: 2, column: 2 }, &marker);
+        assert!(board.check_win(&CellCoord { row: 2, column: 2 }, &marker));
+
+        let mut board = Board::new();
+        board.place_marker(&CellCoord { row: 0, column: 2 }, &marker);
+        assert!(!board.check_win(&CellCoord { row: 0, column: 2 }, &marker));
+        board.place_marker(&CellCoord { row: 1, column: 1 }, &marker);
+        assert!(!board.check_win(&CellCoord { row: 1, column: 1 }, &marker));
+        board.place_marker(&CellCoord { row: 2, column: 0 }, &marker);
+        assert!(board.check_win(&CellCoord { row: 2, column: 0 }, &marker));
+    }
+
+    #[test]
+    fn checks_tie() {
+        let mut board = Board::new();
+        board.place_marker(&CellCoord { row: 0, column: 0 }, &Marker::X);
+        board.place_marker(&CellCoord { row: 0, column: 1 }, &Marker::X);
+        board.place_marker(&CellCoord { row: 0, column: 2 }, &Marker::O);
+    }
+
+    #[test]
+    fn validates_move_to_used_cell() {
+        let marker = Marker::X;
+        let mut board = Board::new();
+        let move_type = board.validate_move(&CellCoord { row: 0, column: 0 });
+        assert_eq!(move_type, Move::Valid);
+
+        board.place_marker(&CellCoord { row: 0, column: 0 }, &marker);
+        let move_type = board.validate_move(&CellCoord { row: 0, column: 0 });
+        assert_eq!(move_type, Move::Invalid);
+    }
+
+    #[test]
+    fn validates_out_of_bounds_move() {
+        let board = Board::new();
+        let move_type = board.validate_move(&CellCoord { row: 3, column: 0 });
+        assert_eq!(move_type, Move::Invalid);
+        let move_type = board.validate_move(&CellCoord { row: 1, column: 3 });
+        assert_eq!(move_type, Move::Invalid);
     }
 }

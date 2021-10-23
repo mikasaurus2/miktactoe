@@ -9,6 +9,7 @@ pub struct CellCoord {
     pub row: usize,
 }
 
+#[derive(Debug, PartialEq)]
 pub enum Move {
     Valid,
     Invalid,

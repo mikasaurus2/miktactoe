@@ -36,7 +36,22 @@ other modules then use `use` to bring the required functionality into scope.
 For example, `player` module requires structures found in the `common` module.
 It brings those structures into scope with `use create::common::*`.
 
-### add some basic unit tests
+### ✓add some basic unit tests
+
+Rust has a neat unit and integration test capability. The unit tests are written
+in the same file as the implementation code, under a nested module called `test`.
+Integration tests are placed in a top level `tests` directory.
+
+I added unit tests to the `Board` implementation to ensure it places markers,
+validates moves, and correctly asserts wins and ties. Writing these tests exposed
+a bounds checking bug in my move validation code! (Go unit tests!)
+
+However, at this stage, the game requires user input from the player to run.
+This makes it difficult to write tests for that component. I'll have to refactor
+this later. One possibility is to "hide" the user input code behind a trait, and
+use different implementation for testing vs playing. I can then inject the proper
+implementation into the `Game` struct for it to use.
+
 ### make random computer player
 ### make optimal computer player
 ### add text user interface representation

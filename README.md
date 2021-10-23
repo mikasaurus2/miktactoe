@@ -46,6 +46,13 @@ I added unit tests to the `Board` implementation to ensure it places markers,
 validates moves, and correctly asserts wins and ties. Writing these tests exposed
 a bounds checking bug in my move validation code! (Go unit tests!)
 
+Writing the test for detecting a tie game led to refactoring some code. The marker
+count used to determine the tie was used by the game loop. Since the game loop
+requires user input, it was difficult to test the tie check. Instead, I moved
+the marker count into the `Board` implementation and added a new `enum BoardState`
+that indicates whether somebody won, the game is a tie, or is currently being played.
+I was then able to add the unit test easily.
+
 However, at this stage, the game requires user input from the player to run.
 This makes it difficult to write tests for that component. I'll have to refactor
 this later. One possibility is to "hide" the user input code behind a trait, and

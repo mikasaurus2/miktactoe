@@ -2,7 +2,7 @@
 //use common;
 //mod player;
 //
-use crate::board::Board;
+use crate::board::{Board, BoardState};
 use crate::common::{Marker, Move};
 use crate::player::Player;
 
@@ -28,7 +28,6 @@ impl Game {
     }
 
     pub fn run(&mut self) {
-        let mut marker_count = 0;
         self.board.display();
         loop {
             let mut player_move = {
@@ -41,16 +40,20 @@ impl Game {
                 player_move
             };
             self.board.place_marker(&player_move, &self.player1.marker);
-            marker_count += 1;
             self.board.display();
-            if self.board.check_win(&player_move, &self.player1.marker) {
-                println!("{} won!", self.player1.name);
-                break;
-            }
-
-            if marker_count == 9 {
-                println!("The game was a tie!");
-                return;
+            match self
+                .board
+                .check_board_state(&player_move, &self.player1.marker)
+            {
+                BoardState::Win => {
+                    println!("{} won!", self.player1.name);
+                    break;
+                }
+                BoardState::Tie => {
+                    println!("The game was a tie!");
+                    return;
+                }
+                BoardState::Playing => (),
             }
 
             player_move = {
@@ -63,16 +66,20 @@ impl Game {
                 player_move
             };
             self.board.place_marker(&player_move, &self.player2.marker);
-            marker_count += 1;
             self.board.display();
-            if self.board.check_win(&player_move, &self.player2.marker) {
-                println!("{} won!", self.player2.name);
-                break;
-            }
-
-            if marker_count == 9 {
-                println!("The game was a tie!");
-                return;
+            match self
+                .board
+                .check_board_state(&player_move, &self.player2.marker)
+            {
+                BoardState::Win => {
+                    println!("{} won!", self.player1.name);
+                    break;
+                }
+                BoardState::Tie => {
+                    println!("The game was a tie!");
+                    return;
+                }
+                BoardState::Playing => (),
             }
         }
     }

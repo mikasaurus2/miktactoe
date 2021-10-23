@@ -59,6 +59,8 @@ this later. One possibility is to "hide" the user input code behind a trait, and
 use different implementation for testing vs playing. I can then inject the proper
 implementation into the `Game` struct for it to use.
 
+tag: [`v2`](https://github.com/mikasaurus2/miktactoe/tree/v2)
+
 ### make random computer player
 ### make optimal computer player
 ### add text user interface representation

@@ -62,6 +62,11 @@ implementation into the `Game` struct for it to use.
 tag: [`v2`](https://github.com/mikasaurus2/miktactoe/tree/v2)
 
 ### make random computer player
+
+I created a random computer player with pregenerated move coordinates. I created
+a cartesian product of the two axis indexes and randomized the ordering to simulate
+a random choice computer player.
+
 ### make optimal computer player
 ### add text user interface representation
 ### allow choosing human or computer players

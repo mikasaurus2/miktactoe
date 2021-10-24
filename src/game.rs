@@ -4,7 +4,7 @@
 //
 use crate::board::{Board, BoardState};
 use crate::common::Marker;
-use crate::player::ai_random::RandomAI;
+use crate::player::{ai_random::RandomAI, ai_basic::BasicAI};
 
 pub struct Game {
     // Human players
@@ -12,7 +12,7 @@ pub struct Game {
     //player2: Human,
     // Computer players
     player1: RandomAI,
-    player2: RandomAI,
+    player2: BasicAI,
     board: Board,
 }
 
@@ -32,7 +32,7 @@ impl Game {
 
             // Computer players
             player1: RandomAI::new(String::from("Computron"), Marker::X),
-            player2: RandomAI::new(String::from("Hal9000"), Marker::O),
+            player2: BasicAI::new(String::from("Hal9000"), Marker::O),
             board: Board::new(),
         }
     }

@@ -1,8 +1,10 @@
 use crate::common::*;
+use std::collections::HashMap;
 
 pub struct Board {
     cells: [[char; 3]; 3],
     marker_count: u8,
+    metadata: BoardMetadata,
 }
 
 #[derive(Debug, PartialEq)]
@@ -26,6 +28,7 @@ impl Board {
         Board {
             cells: [['_'; 3]; 3],
             marker_count: 0,
+            metadata: BoardMetadata::new(),
         }
     }
 
@@ -44,7 +47,7 @@ impl Board {
         );
     }
 
-    pub fn place_marker(&mut self, cell_coord: &CellCoord, marker: &Marker) {
+    pub fn place_marker(&mut self, cell_coord: CellCoord, marker: Marker) {
         match marker {
             Marker::X => self.cells[cell_coord.row][cell_coord.column] = 'X',
             Marker::O => self.cells[cell_coord.row][cell_coord.column] = 'O',
@@ -52,7 +55,7 @@ impl Board {
         self.marker_count += 1;
     }
 
-    pub fn validate_move(&self, cell_coord: &CellCoord) -> Move {
+    pub fn validate_move(&self, cell_coord: CellCoord) -> Move {
         // We only check the upper bound, because column and row are usize,
         // which is always >= 0.
         if cell_coord.column <= 2 && cell_coord.row <= 2 {
@@ -72,7 +75,7 @@ impl Board {
     // Since we check for a win after every move, we only have to check
     // the row, column, and diagnals that correspond to the most recently
     // marked cell.
-    pub fn check_board_state(&self, last_move: &CellCoord, marker: &Marker) -> BoardState {
+    pub fn check_board_state(&self, last_move: CellCoord, marker: Marker) -> BoardState {
         // Checking a row. So we keep the row (y coordinate) consistent.
         // We use an iterator here to iterate each column in the row.
         // We provide a lambda to `all()` to check whether each column
@@ -136,6 +139,76 @@ impl Board {
 
         BoardState::Playing
     }
+
+    pub fn update_board_metadata(&mut self, last_move: CellCoord, marker: Marker) {
+        self.metadata.trigger_cell_reactors(last_move);
+
+        // Update the winnable cells for this marker.
+        // row must have 2 of marker and 1 empty
+        // column must have 2 of marker and 1 empty
+        // diagonal must have 2 of marker and 1 empty
+
+        let mut winning_coord = CellCoord { row: 0, column: 0 };
+        let (x_count, empty_count) = self.cells[last_move.row].iter().enumerate().fold(
+            (0, 0),
+            |mut acc, (column_index, cell_marker)| match cell_marker {
+                'X' if marker == Marker::X => {
+                    acc.0 += 1;
+                    acc
+                }
+                'O' if marker == Marker::O => {
+                    acc.0 += 1;
+                    acc
+                }
+                '_' => {
+                    winning_coord.row = last_move.row;
+                    winning_coord.column = column_index;
+                    acc.1 += 1;
+                    acc
+                }
+                _ => (0, 0),
+            },
+        );
+        println!("row stats: {} {}", x_count, empty_count);
+        if x_count == 2 && empty_count == 1 {
+            println!("winning move: {:?}", winning_coord);
+            self.metadata.add_winning_coord(winning_coord, marker);
+        }
+    }
+}
+
+struct BoardMetadata {
+    // winning coords: map of Marker to vector of CellCoord
+    winning_coords: HashMap<Marker, Vec<CellCoord>>,
+    // 2 d array of vector of lambdas
+    cell_reactors: Vec<Vec<Vec<fn(CellCoord)>>>,
+}
+
+impl BoardMetadata {
+    fn new() -> BoardMetadata {
+        BoardMetadata {
+            winning_coords: HashMap::new(),
+            cell_reactors: vec![vec![Vec::new(); 3]; 3],
+        }
+    }
+
+    fn add_winning_coord(&mut self, winning_coord: CellCoord, marker: Marker) {
+        let coords = self.winning_coords.entry(marker).or_insert(Vec::new());
+        coords.push(winning_coord);
+
+        let reactor = |winning_coord| {
+            println!("Reacting to marker placement in {:?}!", winning_coord);
+        };
+        self.cell_reactors[winning_coord.row][winning_coord.column].push(reactor);
+    }
+
+    fn trigger_cell_reactors(&mut self, cell_coord: CellCoord) {
+        println!("Checking reactors");
+        for reactor in self.cell_reactors[cell_coord.row][cell_coord.column].iter() {
+            println!("Triggering reactor for {:?}", cell_coord);
+            reactor(cell_coord);
+        }
+    }
 }
 
 #[cfg(test)]
@@ -149,11 +222,11 @@ mod tests {
     fn checks_row_win() {
         let marker = Marker::X;
         let mut board = Board::new();
-        board.place_marker(&CellCoord { row: 0, column: 0 }, &marker);
-        board.place_marker(&CellCoord { row: 0, column: 1 }, &marker);
-        board.place_marker(&CellCoord { row: 0, column: 2 }, &marker);
+        board.place_marker(CellCoord { row: 0, column: 0 }, marker);
+        board.place_marker(CellCoord { row: 0, column: 1 }, marker);
+        board.place_marker(CellCoord { row: 0, column: 2 }, marker);
         assert_eq!(
-            board.check_board_state(&CellCoord { row: 0, column: 2 }, &marker),
+            board.check_board_state(CellCoord { row: 0, column: 2 }, marker),
             BoardState::Win
         );
     }
@@ -162,11 +235,11 @@ mod tests {
     fn checks_column_win() {
         let marker = Marker::X;
         let mut board = Board::new();
-        board.place_marker(&CellCoord { row: 0, column: 0 }, &marker);
-        board.place_marker(&CellCoord { row: 1, column: 0 }, &marker);
-        board.place_marker(&CellCoord { row: 2, column: 0 }, &marker);
+        board.place_marker(CellCoord { row: 0, column: 0 }, marker);
+        board.place_marker(CellCoord { row: 1, column: 0 }, marker);
+        board.place_marker(CellCoord { row: 2, column: 0 }, marker);
         assert_eq!(
-            board.check_board_state(&CellCoord { row: 2, column: 0 }, &marker),
+            board.check_board_state(CellCoord { row: 2, column: 0 }, marker),
             BoardState::Win
         );
     }
@@ -174,19 +247,19 @@ mod tests {
     #[test]
     fn checks_row_not_win() {
         let mut board = Board::new();
-        board.place_marker(&CellCoord { row: 0, column: 0 }, &Marker::X);
+        board.place_marker(CellCoord { row: 0, column: 0 }, Marker::X);
         assert_eq!(
-            board.check_board_state(&CellCoord { row: 0, column: 0 }, &Marker::X),
+            board.check_board_state(CellCoord { row: 0, column: 0 }, Marker::X),
             BoardState::Playing
         );
-        board.place_marker(&CellCoord { row: 0, column: 1 }, &Marker::X);
+        board.place_marker(CellCoord { row: 0, column: 1 }, Marker::X);
         assert_eq!(
-            board.check_board_state(&CellCoord { row: 0, column: 1 }, &Marker::X),
+            board.check_board_state(CellCoord { row: 0, column: 1 }, Marker::X),
             BoardState::Playing
         );
-        board.place_marker(&CellCoord { row: 0, column: 2 }, &Marker::O);
+        board.place_marker(CellCoord { row: 0, column: 2 }, Marker::O);
         assert_eq!(
-            board.check_board_state(&CellCoord { row: 0, column: 2 }, &Marker::O),
+            board.check_board_state(CellCoord { row: 0, column: 2 }, Marker::O),
             BoardState::Playing
         );
     }
@@ -194,19 +267,19 @@ mod tests {
     #[test]
     fn checks_column_not_win() {
         let mut board = Board::new();
-        board.place_marker(&CellCoord { row: 0, column: 0 }, &Marker::X);
+        board.place_marker(CellCoord { row: 0, column: 0 }, Marker::X);
         assert_eq!(
-            board.check_board_state(&CellCoord { row: 0, column: 0 }, &Marker::X),
+            board.check_board_state(CellCoord { row: 0, column: 0 }, Marker::X),
             BoardState::Playing
         );
-        board.place_marker(&CellCoord { row: 1, column: 0 }, &Marker::X);
+        board.place_marker(CellCoord { row: 1, column: 0 }, Marker::X);
         assert_eq!(
-            board.check_board_state(&CellCoord { row: 1, column: 0 }, &Marker::X),
+            board.check_board_state(CellCoord { row: 1, column: 0 }, Marker::X),
             BoardState::Playing
         );
-        board.place_marker(&CellCoord { row: 2, column: 0 }, &Marker::O);
+        board.place_marker(CellCoord { row: 2, column: 0 }, Marker::O);
         assert_eq!(
-            board.check_board_state(&CellCoord { row: 2, column: 0 }, &Marker::O),
+            board.check_board_state(CellCoord { row: 2, column: 0 }, Marker::O),
             BoardState::Playing
         );
     }
@@ -215,36 +288,36 @@ mod tests {
     fn checks_diag_win() {
         let marker = Marker::X;
         let mut board = Board::new();
-        board.place_marker(&CellCoord { row: 0, column: 0 }, &marker);
+        board.place_marker(CellCoord { row: 0, column: 0 }, marker);
         assert_eq!(
-            board.check_board_state(&CellCoord { row: 0, column: 0 }, &marker),
+            board.check_board_state(CellCoord { row: 0, column: 0 }, marker),
             BoardState::Playing
         );
-        board.place_marker(&CellCoord { row: 1, column: 1 }, &marker);
+        board.place_marker(CellCoord { row: 1, column: 1 }, marker);
         assert_eq!(
-            board.check_board_state(&CellCoord { row: 1, column: 1 }, &marker),
+            board.check_board_state(CellCoord { row: 1, column: 1 }, marker),
             BoardState::Playing
         );
-        board.place_marker(&CellCoord { row: 2, column: 2 }, &marker);
+        board.place_marker(CellCoord { row: 2, column: 2 }, marker);
         assert_eq!(
-            board.check_board_state(&CellCoord { row: 2, column: 2 }, &marker),
+            board.check_board_state(CellCoord { row: 2, column: 2 }, marker),
             BoardState::Win
         );
 
         let mut board = Board::new();
-        board.place_marker(&CellCoord { row: 0, column: 2 }, &marker);
+        board.place_marker(CellCoord { row: 0, column: 2 }, marker);
         assert_eq!(
-            board.check_board_state(&CellCoord { row: 0, column: 2 }, &marker),
+            board.check_board_state(CellCoord { row: 0, column: 2 }, marker),
             BoardState::Playing
         );
-        board.place_marker(&CellCoord { row: 1, column: 1 }, &marker);
+        board.place_marker(CellCoord { row: 1, column: 1 }, marker);
         assert_eq!(
-            board.check_board_state(&CellCoord { row: 1, column: 1 }, &marker),
+            board.check_board_state(CellCoord { row: 1, column: 1 }, marker),
             BoardState::Playing
         );
-        board.place_marker(&CellCoord { row: 2, column: 0 }, &marker);
+        board.place_marker(CellCoord { row: 2, column: 0 }, marker);
         assert_eq!(
-            board.check_board_state(&CellCoord { row: 2, column: 0 }, &marker),
+            board.check_board_state(CellCoord { row: 2, column: 0 }, marker),
             BoardState::Win
         );
     }
@@ -252,17 +325,17 @@ mod tests {
     #[test]
     fn checks_tie() {
         let mut board = Board::new();
-        board.place_marker(&CellCoord { row: 0, column: 0 }, &Marker::X);
-        board.place_marker(&CellCoord { row: 0, column: 1 }, &Marker::X);
-        board.place_marker(&CellCoord { row: 0, column: 2 }, &Marker::O);
-        board.place_marker(&CellCoord { row: 1, column: 0 }, &Marker::O);
-        board.place_marker(&CellCoord { row: 1, column: 1 }, &Marker::O);
-        board.place_marker(&CellCoord { row: 1, column: 2 }, &Marker::X);
-        board.place_marker(&CellCoord { row: 2, column: 0 }, &Marker::X);
-        board.place_marker(&CellCoord { row: 2, column: 1 }, &Marker::X);
-        board.place_marker(&CellCoord { row: 2, column: 2 }, &Marker::O);
+        board.place_marker(CellCoord { row: 0, column: 0 }, Marker::X);
+        board.place_marker(CellCoord { row: 0, column: 1 }, Marker::X);
+        board.place_marker(CellCoord { row: 0, column: 2 }, Marker::O);
+        board.place_marker(CellCoord { row: 1, column: 0 }, Marker::O);
+        board.place_marker(CellCoord { row: 1, column: 1 }, Marker::O);
+        board.place_marker(CellCoord { row: 1, column: 2 }, Marker::X);
+        board.place_marker(CellCoord { row: 2, column: 0 }, Marker::X);
+        board.place_marker(CellCoord { row: 2, column: 1 }, Marker::X);
+        board.place_marker(CellCoord { row: 2, column: 2 }, Marker::O);
         assert_eq!(
-            board.check_board_state(&CellCoord { row: 2, column: 2 }, &Marker::O),
+            board.check_board_state(CellCoord { row: 2, column: 2 }, Marker::O),
             BoardState::Tie
         );
     }
@@ -271,20 +344,20 @@ mod tests {
     fn validates_move_to_used_cell() {
         let marker = Marker::X;
         let mut board = Board::new();
-        let move_type = board.validate_move(&CellCoord { row: 0, column: 0 });
+        let move_type = board.validate_move(CellCoord { row: 0, column: 0 });
         assert_eq!(move_type, Move::Valid);
 
-        board.place_marker(&CellCoord { row: 0, column: 0 }, &marker);
-        let move_type = board.validate_move(&CellCoord { row: 0, column: 0 });
+        board.place_marker(CellCoord { row: 0, column: 0 }, marker);
+        let move_type = board.validate_move(CellCoord { row: 0, column: 0 });
         assert_eq!(move_type, Move::Invalid);
     }
 
     #[test]
     fn validates_out_of_bounds_move() {
         let board = Board::new();
-        let move_type = board.validate_move(&CellCoord { row: 3, column: 0 });
+        let move_type = board.validate_move(CellCoord { row: 3, column: 0 });
         assert_eq!(move_type, Move::Invalid);
-        let move_type = board.validate_move(&CellCoord { row: 1, column: 3 });
+        let move_type = board.validate_move(CellCoord { row: 1, column: 3 });
         assert_eq!(move_type, Move::Invalid);
     }
 }

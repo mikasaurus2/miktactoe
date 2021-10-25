@@ -1,4 +1,5 @@
 use crate::common::*;
+use crate::board::Board;
 use std::io;
 
 #[derive(Debug)]
@@ -9,7 +10,7 @@ pub struct Human {
 
 impl Human {
     #[allow(dead_code)]
-    pub fn get_move(&self) -> CellCoord {
+    pub fn get_valid_move(&self, board: &Board) -> CellCoord {
         let mut input = String::new();
         println!("{}'s turn.", self.name);
         println!("column index (left to right)");

@@ -4,15 +4,15 @@
 //
 use crate::board::{Board, BoardState};
 use crate::common::Marker;
-use crate::player::{ai_random::RandomAI, ai_basic::BasicAI};
+use crate::player::{human::Human, ai_random::RandomAI, ai_basic::BasicAI};
 
 pub struct Game {
     // Human players
-    //player1: Human,
-    //player2: Human,
+    player1: Human,
+    player2: Human,
     // Computer players
-    player1: RandomAI,
-    player2: BasicAI,
+    //player1: RandomAI,
+    //player2: BasicAI,
     board: Board,
 }
 
@@ -21,18 +21,18 @@ impl Game {
         Game {
             // Human players
             //
-            //player1: Human {
-            //    name: String::from("Mike"),
-            //    marker: Marker::X,
-            //},
-            //player2: Human {
-            //    name: String::from("Steph"),
-            //    marker: Marker::X,
-            //},
+            player1: Human {
+                name: String::from("Mike"),
+                marker: Marker::X,
+            },
+            player2: Human {
+                name: String::from("Steph"),
+                marker: Marker::O,
+            },
 
             // Computer players
-            player1: RandomAI::new(String::from("Computron"), Marker::X),
-            player2: BasicAI::new(String::from("Hal9000"), Marker::O),
+            //player1: RandomAI::new(String::from("Computron"), Marker::X),
+            //player2: BasicAI::new(String::from("Hal9000"), Marker::O),
             board: Board::new(),
         }
     }
@@ -41,11 +41,11 @@ impl Game {
         self.board.display();
         loop {
             let mut player_move = self.player1.get_valid_move(&self.board);
-            self.board.place_marker(&player_move, &self.player1.marker);
+            self.board.place_marker(player_move, self.player1.marker);
             self.board.display();
             match self
                 .board
-                .check_board_state(&player_move, &self.player1.marker)
+                .check_board_state(player_move, self.player1.marker)
             {
                 BoardState::Win => {
                     println!("{} won!", self.player1.name);
@@ -57,13 +57,14 @@ impl Game {
                 }
                 BoardState::Playing => (),
             }
+            self.board.update_board_metadata(player_move, self.player1.marker);
 
             player_move = self.player2.get_valid_move(&self.board);
-            self.board.place_marker(&player_move, &self.player2.marker);
+            self.board.place_marker(player_move, self.player2.marker);
             self.board.display();
             match self
                 .board
-                .check_board_state(&player_move, &self.player2.marker)
+                .check_board_state(player_move, self.player2.marker)
             {
                 BoardState::Win => {
                     println!("{} won!", self.player2.name);
@@ -75,6 +76,7 @@ impl Game {
                 }
                 BoardState::Playing => (),
             }
+            self.board.update_board_metadata(player_move, self.player2.marker);
         }
     }
 }

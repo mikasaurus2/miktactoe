@@ -49,7 +49,7 @@ impl RandomAI {
                 )
             });
 
-            if let Move::Valid = board.validate_move(&player_move) {
+            if let Move::Valid = board.validate_move(player_move) {
                 break player_move;
             }
         }

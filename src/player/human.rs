@@ -28,6 +28,6 @@ impl Human {
 
         let row: usize = input.trim().parse().expect("Please type a number!");
 
-        CellCoord { column, row }
+        CellCoord::new(row, column)
     }
 }

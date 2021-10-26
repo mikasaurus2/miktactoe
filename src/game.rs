@@ -57,7 +57,6 @@ impl Game {
                 }
                 BoardState::Playing => (),
             }
-            self.board.update_board_metadata(player_move, self.player1.marker);
 
             player_move = self.player2.get_valid_move(&self.board);
             self.board.place_marker(player_move, self.player2.marker);
@@ -76,7 +75,6 @@ impl Game {
                 }
                 BoardState::Playing => (),
             }
-            self.board.update_board_metadata(player_move, self.player2.marker);
         }
     }
 }

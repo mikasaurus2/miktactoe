@@ -17,7 +17,7 @@ pub struct BasicAI {
 impl BasicAI {
     pub fn new(name: String, marker: Marker) -> BasicAI {
         let mut move_set: Vec<CellCoord> = itertools::iproduct!(0..3, 0..3)
-            .map(|(row, column)| CellCoord { row, column })
+            .map(|(row, column)| CellCoord::new(row, column))
             .collect();
 
         let mut rng = thread_rng();

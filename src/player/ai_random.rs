@@ -18,7 +18,7 @@ impl RandomAI {
         // all possible cell coordinates. We collect() it to form a vector of these
         // coordinates, and then randomly shuffle it.
         let mut move_set: Vec<CellCoord> = itertools::iproduct!(0..3, 0..3)
-            .map(|(row, column)| CellCoord { row, column })
+            .map(|(row, column)| CellCoord::new(row, column))
             .collect();
 
         let mut rng = thread_rng();

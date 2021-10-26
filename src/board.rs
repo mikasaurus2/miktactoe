@@ -33,12 +33,10 @@ impl Board {
     }
 
     pub fn display(&self) {
-        let get_cell_char = |&cell_state| {
-            match cell_state {
-                CellState::X => 'X',
-                CellState::O => 'O',
-                CellState::Empty => '_',
-            }
+        let get_cell_char = |&cell_state| match cell_state {
+            CellState::X => 'X',
+            CellState::O => 'O',
+            CellState::Empty => '_',
         };
         println!(
             "\n{} {} {}\n{} {} {}\n{} {} {}\n",
@@ -199,61 +197,120 @@ impl Board {
             _ => true,
         });
 
-        //self.metadata.cell_flags[last_move.get_index()].retain(|&cell_flag| {
-        //    match cell_flag {
-        //        CellFlags::WinningMove(Marker::X) if marker == Marker::O => {
-        //            // O blocked X's winning move
-        //            // remove cell coord from winning coords
-        //            if let Some(winning_coords) = self.metadata.winning_coords.get_mut(&marker) {
-        //                winning_coords.retain(|&cell_coord| {
-        //                    if cell_coord == last_move {
-        //                        return false;
-        //                    }
-        //                    return true;
-        //                });
-        //            };
-        //            false
-        //        }
-        //        CellFlags::WinningMove(Marker::O) if marker == Marker::X => {
-        //            // X blocked O's winning move
-        //            false
-        //        }
-        //        _ => true,
-        //    }
-        //});
+        // To see if there is a winning move, we count the cell states in the vector of
+        // 3 cells. If there are 2 cells with the specified marker, and 1 empty cell, the
+        // empty cell is a winning move.
+        let get_winning_move =
+            |cells: Vec<(CellState, CellCoord)>, marker: Marker| -> Option<CellCoord> {
+                let (cell_states, cell_coords): (Vec<_>, Vec<_>) = cells.into_iter().unzip();
 
-        // TODO: refactor this stuff
-        // Update the winnable cells for this marker.
-        // row must have 2 of marker and 1 empty
-        // column must have 2 of marker and 1 empty
-        // diagonal must have 2 of marker and 1 empty
+                let marker_count = cell_states
+                    .iter()
+                    .filter(|cell_state| match cell_state {
+                        CellState::X if marker == Marker::X => true,
+                        CellState::O if marker == Marker::O => true,
+                        _ => false,
+                    })
+                    .count();
 
-        //
+                if marker_count == 2 {
+                    if let Some(empty_cell_index) =
+                        cell_states.iter().position(|&cell_state| match cell_state {
+                            CellState::Empty => true,
+                            _ => false,
+                        })
+                    {
+                        return Some(cell_coords[empty_cell_index]);
+                    }
+                };
+                None
+            };
 
-        let mut winning_coord = CellCoord::new(0, 0);
-        let (x_count, empty_count) = self.cells[last_move.row].iter().enumerate().fold(
-            (0, 0),
-            |mut acc, (column_index, cell_marker)| match cell_marker {
-                CellState::X if marker == Marker::X => {
-                    acc.0 += 1;
-                    acc
+        let get_move_row = |last_move: CellCoord| -> Vec<(CellState, CellCoord)> {
+            self.cells[last_move.row]
+                .iter()
+                .enumerate()
+                .map(|(column_index, &cell_state)| {
+                    (cell_state, CellCoord::new(last_move.row, column_index))
+                })
+                .collect()
+        };
+        let move_row = get_move_row(last_move);
+        if let Some(winning_move) = get_winning_move(move_row, marker) {
+            self.metadata.add_winning_coord(winning_move, marker);
+        }
+
+        let get_move_column = |last_move: CellCoord| -> Vec<(CellState, CellCoord)> {
+            self.cells
+                .iter()
+                .enumerate()
+                .map(|(row_index, row)| {
+                    (
+                        row[last_move.column],
+                        CellCoord::new(row_index, last_move.column),
+                    )
+                })
+                .collect()
+        };
+        let move_column = get_move_column(last_move);
+        if let Some(winning_move) = get_winning_move(move_column, marker) {
+            self.metadata.add_winning_coord(winning_move, marker);
+        }
+
+        let get_move_diagonal1 = |last_move: CellCoord| -> Option<Vec<(CellState, CellCoord)>> {
+            // Only some cells have a 3 cell diagonal.
+            // X _ _
+            // _ X _
+            // _ _ X
+            match last_move {
+                CellCoord {
+                    row: 0, column: 0, ..
                 }
-                CellState::O if marker == Marker::O => {
-                    acc.0 += 1;
-                    acc
+                | CellCoord {
+                    row: 1, column: 1, ..
                 }
-                CellState::Empty => {
-                    winning_coord = CellCoord::new(last_move.row, column_index);
-                    acc.1 += 1;
-                    acc
+                | CellCoord {
+                    row: 2, column: 2, ..
+                } => Some(vec![
+                    (self.cells[0][0], CellCoord::new(0, 0)),
+                    (self.cells[1][1], CellCoord::new(1, 1)),
+                    (self.cells[2][2], CellCoord::new(2, 2)),
+                ]),
+                _ => None,
+            }
+        };
+        if let Some(move_diagonal1) = get_move_diagonal1(last_move) {
+            if let Some(winning_move) = get_winning_move(move_diagonal1, marker) {
+                self.metadata.add_winning_coord(winning_move, marker);
+            }
+        }
+
+        let get_move_diagonal2 = |last_move: CellCoord| -> Option<Vec<(CellState, CellCoord)>> {
+            // Only some cells have a 3 cell diagonal.
+            // _ _ X
+            // _ X _
+            // X _ _
+            match last_move {
+                CellCoord {
+                    row: 2, column: 0, ..
                 }
-                _ => (0, 0),
-            },
-        );
-        println!("row stats: {} {}", x_count, empty_count);
-        if x_count == 2 && empty_count == 1 {
-            println!("winning move: {:?}", winning_coord);
-            self.metadata.add_winning_coord(winning_coord, marker);
+                | CellCoord {
+                    row: 1, column: 1, ..
+                }
+                | CellCoord {
+                    row: 0, column: 2, ..
+                } => Some(vec![
+                    (self.cells[2][0], CellCoord::new(2, 0)),
+                    (self.cells[1][1], CellCoord::new(1, 1)),
+                    (self.cells[0][2], CellCoord::new(0, 2)),
+                ]),
+                _ => None,
+            }
+        };
+        if let Some(move_diagonal2) = get_move_diagonal2(last_move) {
+            if let Some(winning_move) = get_winning_move(move_diagonal2, marker) {
+                self.metadata.add_winning_coord(winning_move, marker);
+            }
         }
     }
 }
@@ -294,6 +351,7 @@ impl BoardMetadata {
         // if there isn't one currently at the `marker` key.
         let coords = self.winning_coords.entry(marker).or_insert(Vec::new());
         coords.push(winning_coord);
+        println!("Winning cell {:?} for {:?}", winning_coord, marker);
 
         self.cell_flags[winning_coord.get_index()].push(CellFlags::WinningMove(marker));
     }

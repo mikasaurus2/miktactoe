@@ -395,12 +395,12 @@ mod tests {
         let mut board = Board::new();
         board.place_marker(CellCoord::new(0, 0), Marker::X);
         assert_eq!(
-            board.check_board_state(CellCoord(0, 0), Marker::X),
+            board.check_board_state(CellCoord::new(0, 0), Marker::X),
             BoardState::Playing
         );
-        board.place_marker(CellCoord(0, 1), Marker::X);
+        board.place_marker(CellCoord::new(0, 1), Marker::X);
         assert_eq!(
-            board.check_board_state(CellCoord(0, 1), Marker::X),
+            board.check_board_state(CellCoord::new(0, 1), Marker::X),
             BoardState::Playing
         );
         board.place_marker(CellCoord::new(0, 2), Marker::O);

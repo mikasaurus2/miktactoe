@@ -4,6 +4,15 @@ pub enum Marker {
     O,
 }
 
+impl Marker {
+    pub fn opposite(marker: Marker) -> Marker {
+        match marker {
+            Marker::X => Marker::O,
+            Marker::O => Marker::X,
+        }
+    }
+}
+
 #[derive(Debug, PartialEq, Copy, Clone)]
 pub enum CellState {
     X,

@@ -158,7 +158,7 @@ impl Board {
                         Marker::X,
                         last_move,
                     );
-                    if let Some(winning_coords) = self.metadata.winning_coords.get_mut(&marker) {
+                    if let Some(winning_coords) = self.metadata.winning_coords.get_mut(&Marker::X) {
                         winning_coords.retain(|&cell_coord| {
                             if cell_coord == last_move {
                                 return false;
@@ -177,7 +177,7 @@ impl Board {
                         Marker::O,
                         last_move,
                     );
-                    if let Some(winning_coords) = self.metadata.winning_coords.get_mut(&marker) {
+                    if let Some(winning_coords) = self.metadata.winning_coords.get_mut(&Marker::O) {
                         winning_coords.retain(|&cell_coord| {
                             if cell_coord == last_move {
                                 return false;
@@ -313,6 +313,14 @@ impl Board {
             }
         }
     }
+
+    pub fn get_winning_move(&self, marker: Marker) -> Option<CellCoord> {
+        self.metadata.get_winning_moves(marker).pop()
+    }
+
+    pub fn print_info(&self) {
+        self.metadata.print();
+    }
 }
 
 struct BoardMetadata {
@@ -351,9 +359,28 @@ impl BoardMetadata {
         // if there isn't one currently at the `marker` key.
         let coords = self.winning_coords.entry(marker).or_insert(Vec::new());
         coords.push(winning_coord);
-        println!("Winning cell {:?} for {:?}", winning_coord, marker);
+        //println!("Winning cell {:?} for {:?}", winning_coord, marker);
 
         self.cell_flags[winning_coord.get_index()].push(CellFlags::WinningMove(marker));
+    }
+
+    fn get_winning_moves(&self, marker: Marker) -> Vec<CellCoord> {
+        if let Some(winning_moves) = self.winning_coords.get(&marker) {
+            winning_moves.clone()
+        } else {
+            Vec::new()
+        }
+    }
+
+    pub fn print(&self) {
+        for i in vec![Marker::X, Marker::O] {
+            println!("Winning moves for {:?}:", i);
+            if let Some(winning_moves) = self.winning_coords.get(&i) {
+                winning_moves.iter().for_each(|cell_coord| {
+                    println!("{:?}", cell_coord);
+                })            
+            }
+        }
     }
 }
 

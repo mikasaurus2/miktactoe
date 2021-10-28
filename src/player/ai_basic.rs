@@ -37,7 +37,13 @@ impl BasicAI {
         thread::sleep(time::Duration::from_secs(1));
 
         loop {
-            if let Some(cell_coord) = self.find_winning_move(board, &self.marker) {
+            // place winning move if there is one
+            if let Some(cell_coord) = board.get_winning_move(self.marker) {
+                break cell_coord;
+            }
+
+            // block opponent's winning move if they have one
+            if let Some(cell_coord) = board.get_winning_move(Marker::opposite(self.marker)) {
                 break cell_coord;
             }
 
@@ -52,12 +58,5 @@ impl BasicAI {
                 break player_move;
             }
         }
-    }
-
-    fn find_winning_move(&self, _board: &Board, _marker: &Marker) -> Option<CellCoord> {
-        // Use a basic implementation for now. Cycle through all the rows,
-        // columns, and diagonals to find any winning moves for the specified
-        // marker.
-        None
     }
 }

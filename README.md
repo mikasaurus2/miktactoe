@@ -69,6 +69,33 @@ a random choice computer player.
 
 tag: [`v3`](https://github.com/mikasaurus2/miktactoe/tree/v3)
 
+
+### make basic computer player
+
+I broke out the player implementations into separate submodules and implemented a basic
+AI player.
+
+This basic AI will place a winning move it is available on the board. If not, it will
+block any opponent winning move. If neither are present, it will move randomly.
+
+I implemented a BoardMetadata struct to keep track of the winning coords for each player.
+Each time a player places a marker, the board metadata is updated. This includes adding
+and removing winning moves.
+
+Removing winning moves from the metadata was interesting. I fought with the rust compiler
+for a bit to get this to work. Initially, I wanted to assign a vector of callback functions
+to each cell. These would serve as event handlers in the event that a cell had a marker placed
+into it. Rust made this difficult because the callbacks would have mutable references to the board,
+and Rust doesn't like multiple mutable references at the same time.
+
+To overcome this, I ended up using an enum CellFlags, and assigning the flags to a cell.
+Then, when we update the metadata, we iterate over the cell flags and handle them accordingly
+based on the player's move. The logic for handling cell flags lives in the board, and so
+there are not multiple mutable references anymore.
+
+This makes the AI more fun already. :] You have to create a fork to win.
+
+
 ### make optimal computer player
 ### add text user interface representation
 ### allow choosing human or computer players

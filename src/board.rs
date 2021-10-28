@@ -315,7 +315,7 @@ impl Board {
     }
 
     pub fn get_winning_move(&self, marker: Marker) -> Option<CellCoord> {
-        self.metadata.get_winning_moves(marker).pop()
+        self.metadata.get_winning_coords(marker).pop()
     }
 
     pub fn print_info(&self) {
@@ -364,7 +364,7 @@ impl BoardMetadata {
         self.cell_flags[winning_coord.get_index()].push(CellFlags::WinningMove(marker));
     }
 
-    fn get_winning_moves(&self, marker: Marker) -> Vec<CellCoord> {
+    fn get_winning_coords(&self, marker: Marker) -> Vec<CellCoord> {
         if let Some(winning_moves) = self.winning_coords.get(&marker) {
             winning_moves.clone()
         } else {

@@ -374,11 +374,13 @@ impl BoardMetadata {
 
     pub fn print(&self) {
         for i in vec![Marker::X, Marker::O] {
-            println!("Winning moves for {:?}:", i);
             if let Some(winning_moves) = self.winning_coords.get(&i) {
-                winning_moves.iter().for_each(|cell_coord| {
-                    println!("{:?}", cell_coord);
-                })            
+                if !winning_moves.is_empty() {
+                    println!("Winning moves for {:?}:", i);
+                    winning_moves.iter().for_each(|cell_coord| {
+                        println!("{:?}", cell_coord);
+                    })
+                }
             }
         }
     }

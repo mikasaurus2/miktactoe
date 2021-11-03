@@ -200,7 +200,7 @@ impl Board {
         // To see if there is a winning move, we count the cell states in the vector of
         // 3 cells. If there are 2 cells with the specified marker, and 1 empty cell, the
         // empty cell is a winning move.
-        let get_winning_move =
+        let find_winning_move =
             |cells: Vec<(CellState, CellCoord)>, marker: Marker| -> Option<CellCoord> {
                 let (cell_states, cell_coords): (Vec<_>, Vec<_>) = cells.into_iter().unzip();
 
@@ -236,7 +236,7 @@ impl Board {
                 .collect()
         };
         let move_row = get_move_row(last_move);
-        if let Some(winning_move) = get_winning_move(move_row, marker) {
+        if let Some(winning_move) = find_winning_move(move_row, marker) {
             self.metadata.add_winning_coord(winning_move, marker);
         }
 
@@ -253,7 +253,7 @@ impl Board {
                 .collect()
         };
         let move_column = get_move_column(last_move);
-        if let Some(winning_move) = get_winning_move(move_column, marker) {
+        if let Some(winning_move) = find_winning_move(move_column, marker) {
             self.metadata.add_winning_coord(winning_move, marker);
         }
 
@@ -280,7 +280,7 @@ impl Board {
             }
         };
         if let Some(move_diagonal1) = get_move_diagonal1(last_move) {
-            if let Some(winning_move) = get_winning_move(move_diagonal1, marker) {
+            if let Some(winning_move) = find_winning_move(move_diagonal1, marker) {
                 self.metadata.add_winning_coord(winning_move, marker);
             }
         }
@@ -308,14 +308,18 @@ impl Board {
             }
         };
         if let Some(move_diagonal2) = get_move_diagonal2(last_move) {
-            if let Some(winning_move) = get_winning_move(move_diagonal2, marker) {
+            if let Some(winning_move) = find_winning_move(move_diagonal2, marker) {
                 self.metadata.add_winning_coord(winning_move, marker);
             }
         }
     }
 
     pub fn get_winning_move(&self, marker: Marker) -> Option<CellCoord> {
-        self.metadata.get_winning_coords(marker).pop()
+        if let Some(mut vec) = self.metadata.get_winning_coords(marker) {
+            vec.pop()
+        } else {
+            None
+        }
     }
 
     pub fn print_info(&self) {
@@ -364,11 +368,11 @@ impl BoardMetadata {
         self.cell_flags[winning_coord.get_index()].push(CellFlags::WinningMove(marker));
     }
 
-    fn get_winning_coords(&self, marker: Marker) -> Vec<CellCoord> {
+    fn get_winning_coords(&self, marker: Marker) -> Option<Vec<CellCoord>> {
         if let Some(winning_moves) = self.winning_coords.get(&marker) {
-            winning_moves.clone()
+            Some(winning_moves.clone())
         } else {
-            Vec::new()
+            None
         }
     }
 

@@ -539,4 +539,40 @@ mod tests {
         let move_type = board.validate_move(CellCoord::new(1, 3));
         assert_eq!(move_type, Move::Invalid);
     }
+
+    #[test]
+    fn gets_winning_move_column() {
+        let mut board = Board::new();
+        board.place_marker(CellCoord::new(0, 0), Marker::X);
+        board.place_marker(CellCoord::new(1, 0), Marker::X);
+        let winning_move = board.get_winning_move(Marker::X);
+        assert_eq!(winning_move, Some(CellCoord::new(2, 0)));
+    }
+
+    #[test]
+    fn gets_winning_move_row() {
+        let mut board = Board::new();
+        board.place_marker(CellCoord::new(0, 0), Marker::X);
+        board.place_marker(CellCoord::new(0, 1), Marker::X);
+        let winning_move = board.get_winning_move(Marker::X);
+        assert_eq!(winning_move, Some(CellCoord::new(0, 2)));
+    }
+
+    #[test]
+    fn gets_winning_move_diag() {
+        let mut board = Board::new();
+        board.place_marker(CellCoord::new(0, 0), Marker::X);
+        board.place_marker(CellCoord::new(1, 1), Marker::X);
+        let winning_move = board.get_winning_move(Marker::X);
+        assert_eq!(winning_move, Some(CellCoord::new(2, 2)));
+    }
+
+    #[test]
+    fn gets_winning_move_none() {
+        let mut board = Board::new();
+        board.place_marker(CellCoord::new(0, 0), Marker::X);
+        board.place_marker(CellCoord::new(2, 1), Marker::X);
+        let winning_move = board.get_winning_move(Marker::X);
+        assert_eq!(winning_move, None);
+    }
 }

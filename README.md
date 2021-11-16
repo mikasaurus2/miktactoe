@@ -148,7 +148,7 @@ X now has a number of forking move
 I modified the board metadata to calculate these intersections to determine
 the forking move. This update happens after every player move.
 
-
+tag: [`v4`](https://github.com/mikasaurus2/miktactoe/tree/v4)
  
 
 ### make optimal computer player

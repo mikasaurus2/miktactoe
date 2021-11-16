@@ -95,6 +95,61 @@ there are not multiple mutable references anymore.
 
 This makes the AI more fun already. :] You have to create a fork to win.
 
+### make computer that creates forks
+
+A fork creates two winning spaces. Here's how we can determine which moves
+would create forks for the computer.
+
+When a marker is first place on any row or column, the row, column, and
+diagonal are considered fork candidates. Anytime an opponent also occupies
+a row, column, or diagonal, that row, column or diagonal is no longer a fork
+candidate.
+
+If two fork candidates overlap on any cell, their intersection is a forking
+move.
+    
+For example, if X moves to col 0 row 1, the following diagram indicates
+the fork candidates.
+```
+c _ _
+X r r
+c _ _
+```
+
+O places a marker at col1 row0.
+```
+c O _
+X r r
+c _ _
+```
+
+X places at col2 row2. (f indicates forking move for X)
+```
+f O x
+X f f
+f x X
+```
+
+```
+cd  O   c
+X   rd  cr
+cr  r   X
+```
+
+O places at col2 row1.
+```
+cd  O  _
+X   d  O
+cr  r  X
+```
+
+X now has a number of forking move
+
+I modified the board metadata to calculate these intersections to determine
+the forking move. This update happens after every player move.
+
+
+ 
 
 ### make optimal computer player
 ### add text user interface representation

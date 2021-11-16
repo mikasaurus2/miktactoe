@@ -14,6 +14,16 @@ pub enum BoardState {
     Playing,
 }
 
+type SetIndex = usize;
+
+#[derive(Debug, Copy, Clone)]
+enum SetType {
+    Row(SetIndex),
+    Column(SetIndex),
+    Diag1,
+    Diag2,
+}
+
 impl Board {
     pub fn new() -> Board {
         // The outer bracket represents the row index. The inner bracket represents the column
@@ -58,7 +68,7 @@ impl Board {
             Marker::O => self.cells[cell_coord.row][cell_coord.column] = CellState::O,
         }
         self.marker_count += 1;
-        self.update_board_metadata(cell_coord, marker);
+        self.update_board_metadata(cell_coord);
     }
 
     pub fn validate_move(&self, cell_coord: CellCoord) -> Move {
@@ -146,171 +156,129 @@ impl Board {
         BoardState::Playing
     }
 
-    fn update_board_metadata(&mut self, last_move: CellCoord, marker: Marker) {
-        for cell_flag in self.metadata.cell_flags[last_move.get_index()].iter_mut() {
-            match cell_flag {
-                CellFlags::WinningMove(Marker::X) if marker == Marker::O => {
-                    // O blocked X's winning move
-                    // remove cell coord from winning coords
-                    println!(
-                        "{:?} blocked {:?}'s winning move. Removing {:?} from winning coords",
-                        marker,
-                        Marker::X,
-                        last_move,
-                    );
-                    if let Some(winning_coords) = self.metadata.winning_coords.get_mut(&Marker::X) {
-                        winning_coords.retain(|&cell_coord| {
-                            if cell_coord == last_move {
-                                return false;
-                            }
-                            return true;
-                        });
-                    };
-                    *cell_flag = CellFlags::None;
-                }
-                CellFlags::WinningMove(Marker::O) if marker == Marker::X => {
-                    // X blocked O's winning move
-                    // remove cell coord from winning coords
-                    println!(
-                        "{:?} blocked {:?}'s winning move. Removing {:?} from winning coords",
-                        marker,
-                        Marker::O,
-                        last_move,
-                    );
-                    if let Some(winning_coords) = self.metadata.winning_coords.get_mut(&Marker::O) {
-                        winning_coords.retain(|&cell_coord| {
-                            if cell_coord == last_move {
-                                return false;
-                            }
-                            return true;
-                        });
-                    };
-                    *cell_flag = CellFlags::None;
-                }
-                _ => (),
-            }
+    fn update_board_metadata(&mut self, last_move: CellCoord) {
+        match last_move.get_cell_type() {
+            CellType::Corner => self.metadata.remove_corner_move(last_move),
+            CellType::Edge => self.metadata.remove_edge_move(last_move),
+            _ => (),
         }
 
-        // clean up cell flags
-        self.metadata.cell_flags[last_move.get_index()].retain(|&cell_flag| match cell_flag {
-            CellFlags::None => false,
-            _ => true,
-        });
+        self.metadata.reset();
 
-        // To see if there is a winning move, we count the cell states in the vector of
-        // 3 cells. If there are 2 cells with the specified marker, and 1 empty cell, the
-        // empty cell is a winning move.
-        let find_winning_move =
-            |cells: Vec<(CellState, CellCoord)>, marker: Marker| -> Option<CellCoord> {
-                let (cell_states, cell_coords): (Vec<_>, Vec<_>) = cells.into_iter().unzip();
-
-                let marker_count = cell_states
+        let get_row =
+            |row_index: usize, cells: &[[CellState; 3]; 3]| -> Vec<(CellState, CellCoord)> {
+                cells[row_index]
                     .iter()
-                    .filter(|cell_state| match cell_state {
-                        CellState::X if marker == Marker::X => true,
-                        CellState::O if marker == Marker::O => true,
-                        _ => false,
+                    .enumerate()
+                    .map(|(column_index, &cell_state)| {
+                        (cell_state, CellCoord::new(row_index, column_index))
                     })
-                    .count();
-
-                if marker_count == 2 {
-                    if let Some(empty_cell_index) =
-                        cell_states.iter().position(|&cell_state| match cell_state {
-                            CellState::Empty => true,
-                            _ => false,
-                        })
-                    {
-                        return Some(cell_coords[empty_cell_index]);
-                    }
-                };
-                None
+                    .collect()
             };
 
-        let get_move_row = |last_move: CellCoord| -> Vec<(CellState, CellCoord)> {
-            self.cells[last_move.row]
-                .iter()
-                .enumerate()
-                .map(|(column_index, &cell_state)| {
-                    (cell_state, CellCoord::new(last_move.row, column_index))
-                })
-                .collect()
-        };
-        let move_row = get_move_row(last_move);
-        if let Some(winning_move) = find_winning_move(move_row, marker) {
-            self.metadata.add_winning_coord(winning_move, marker);
+        for row_index in 0..3 {
+            let row = get_row(row_index, &self.cells);
+            self.scan_set(row, SetType::Row(row_index));
         }
 
-        let get_move_column = |last_move: CellCoord| -> Vec<(CellState, CellCoord)> {
-            self.cells
-                .iter()
-                .enumerate()
-                .map(|(row_index, row)| {
-                    (
-                        row[last_move.column],
-                        CellCoord::new(row_index, last_move.column),
-                    )
-                })
-                .collect()
-        };
-        let move_column = get_move_column(last_move);
-        if let Some(winning_move) = find_winning_move(move_column, marker) {
-            self.metadata.add_winning_coord(winning_move, marker);
+        let get_col =
+            |col_index: usize, cells: &[[CellState; 3]; 3]| -> Vec<(CellState, CellCoord)> {
+                cells
+                    .iter()
+                    .enumerate()
+                    .map(|(row_index, row)| (row[col_index], CellCoord::new(row_index, col_index)))
+                    .collect()
+            };
+
+        for col_index in 0..3 {
+            let col = get_col(col_index, &self.cells);
+            self.scan_set(col, SetType::Column(col_index));
         }
 
-        let get_move_diagonal1 = |last_move: CellCoord| -> Option<Vec<(CellState, CellCoord)>> {
-            // Only some cells have a 3 cell diagonal.
-            // X _ _
-            // _ X _
-            // _ _ X
-            match last_move {
-                CellCoord {
-                    row: 0, column: 0, ..
-                }
-                | CellCoord {
-                    row: 1, column: 1, ..
-                }
-                | CellCoord {
-                    row: 2, column: 2, ..
-                } => Some(vec![
-                    (self.cells[0][0], CellCoord::new(0, 0)),
-                    (self.cells[1][1], CellCoord::new(1, 1)),
-                    (self.cells[2][2], CellCoord::new(2, 2)),
-                ]),
-                _ => None,
-            }
+        let get_diag1 = |cells: &[[CellState; 3]; 3]| -> Vec<(CellState, CellCoord)> {
+            vec![
+                (cells[0][0], CellCoord::new(0, 0)),
+                (cells[1][1], CellCoord::new(1, 1)),
+                (cells[2][2], CellCoord::new(2, 2)),
+            ]
         };
-        if let Some(move_diagonal1) = get_move_diagonal1(last_move) {
-            if let Some(winning_move) = find_winning_move(move_diagonal1, marker) {
-                self.metadata.add_winning_coord(winning_move, marker);
+        let diag1 = get_diag1(&self.cells);
+        self.scan_set(diag1, SetType::Diag1);
+
+        let get_diag2 = |cells: &[[CellState; 3]; 3]| -> Vec<(CellState, CellCoord)> {
+            vec![
+                (cells[0][2], CellCoord::new(0, 2)),
+                (cells[1][1], CellCoord::new(1, 1)),
+                (cells[2][0], CellCoord::new(2, 0)),
+            ]
+        };
+        let diag2 = get_diag2(&self.cells);
+        self.scan_set(diag2, SetType::Diag2);
+    }
+
+    fn scan_set(&mut self, set: Vec<(CellState, CellCoord)>, set_type: SetType) {
+        let (cell_states, cell_coords): (Vec<_>, Vec<_>) = set.into_iter().unzip();
+
+        let mut x_count: u8 = 0;
+        let mut x_coord: CellCoord = CellCoord::new(0, 0);
+        let mut o_count: u8 = 0;
+        let mut o_coord: CellCoord = CellCoord::new(0, 0);
+        let mut empty: u8 = 0;
+        let mut empty_coord: CellCoord = CellCoord::new(0, 0);
+
+        for (index, cell) in cell_states.iter().enumerate() {
+            match cell {
+                CellState::X => {
+                    x_coord = cell_coords[index];
+                    x_count += 1;
+                }
+                CellState::O => {
+                    o_coord = cell_coords[index];
+                    o_count += 1;
+                }
+                CellState::Empty => {
+                    empty += 1;
+                    empty_coord = cell_coords[index];
+                }
             }
         }
 
-        let get_move_diagonal2 = |last_move: CellCoord| -> Option<Vec<(CellState, CellCoord)>> {
-            // Only some cells have a 3 cell diagonal.
-            // _ _ X
-            // _ X _
-            // X _ _
-            match last_move {
-                CellCoord {
-                    row: 2, column: 0, ..
-                }
-                | CellCoord {
-                    row: 1, column: 1, ..
-                }
-                | CellCoord {
-                    row: 0, column: 2, ..
-                } => Some(vec![
-                    (self.cells[2][0], CellCoord::new(2, 0)),
-                    (self.cells[1][1], CellCoord::new(1, 1)),
-                    (self.cells[0][2], CellCoord::new(0, 2)),
-                ]),
-                _ => None,
+        match (x_count, o_count, empty) {
+            (2, 0, 1) => {
+                // winning move for X
+                self.metadata.add_winning_coord(empty_coord, Marker::X);
             }
-        };
-        if let Some(move_diagonal2) = get_move_diagonal2(last_move) {
-            if let Some(winning_move) = find_winning_move(move_diagonal2, marker) {
-                self.metadata.add_winning_coord(winning_move, marker);
+            (0, 2, 1) => {
+                // winning move for O
+                self.metadata.add_winning_coord(empty_coord, Marker::O);
             }
+            (1, 0, 2) => {
+                // This set is a fork potential for X.
+                match set_type {
+                    SetType::Row(index) => self
+                        .metadata
+                        .add_potential_fork(x_coord, SetType::Row(index), Marker::X),
+                    SetType::Column(index) => self
+                        .metadata
+                        .add_potential_fork(x_coord, SetType::Column(index), Marker::X),
+                    SetType::Diag1 => self.metadata.add_potential_fork(x_coord, SetType::Diag1, Marker::X),
+                    SetType::Diag2 => self.metadata.add_potential_fork(x_coord, SetType::Diag2, Marker::X),
+                }
+            }
+            (0, 1, 2) => {
+                // This set is a fork potential for O.
+                match set_type {
+                    SetType::Row(index) => self
+                        .metadata
+                        .add_potential_fork(o_coord, SetType::Row(index), Marker::O),
+                    SetType::Column(index) => self
+                        .metadata
+                        .add_potential_fork(o_coord, SetType::Column(index), Marker::O),
+                    SetType::Diag1 => self.metadata.add_potential_fork(o_coord, SetType::Diag1, Marker::O),
+                    SetType::Diag2 => self.metadata.add_potential_fork(o_coord, SetType::Diag2, Marker::O),
+                }
+            }
+            _ => (),
         }
     }
 
@@ -322,6 +290,10 @@ impl Board {
         }
     }
 
+    pub fn get_forking_move(&self, marker: Marker) -> Option<CellCoord> {
+        self.metadata.get_fork_coords(marker)
+    }
+
     pub fn print_info(&self) {
         self.metadata.print();
     }
@@ -329,56 +301,157 @@ impl Board {
 
 struct BoardMetadata {
     // winning coords: map of Marker to vector of CellCoord
-    winning_coords: HashMap<Marker, Vec<CellCoord>>,
-    cell_flags: Vec<Vec<CellFlags>>,
-}
-
-#[derive(Copy, Clone)]
-enum CellFlags {
-    WinningMove(Marker),
-    None,
+    winning_moves: HashMap<Marker, Vec<CellCoord>>,
+    corner_moves: Vec<CellCoord>,
+    edge_moves: Vec<CellCoord>,
+    x_potential_forks: Vec<(CellCoord, SetType)>,
+    o_potential_forks: Vec<(CellCoord, SetType)>,
 }
 
 impl BoardMetadata {
     fn new() -> BoardMetadata {
+        let corner_moves = vec![
+            CellCoord::new(0, 0),
+            CellCoord::new(0, 2),
+            CellCoord::new(2, 2),
+            CellCoord::new(2, 0),
+        ];
+        let edge_moves = vec![
+            CellCoord::new(0, 1),
+            CellCoord::new(1, 2),
+            CellCoord::new(2, 1),
+            CellCoord::new(1, 0),
+        ];
         BoardMetadata {
-            winning_coords: HashMap::new(),
-            cell_flags: vec![
-                Vec::new(),
-                Vec::new(),
-                Vec::new(),
-                Vec::new(),
-                Vec::new(),
-                Vec::new(),
-                Vec::new(),
-                Vec::new(),
-                Vec::new(),
-            ],
+            winning_moves: HashMap::new(),
+            corner_moves,
+            edge_moves,
+            x_potential_forks: Vec::new(),
+            o_potential_forks: Vec::new(),
         }
     }
 
     fn add_winning_coord(&mut self, winning_coord: CellCoord, marker: Marker) {
-        // This may be the first time we access the winning_coords HashMap, so
+        // This may be the first time we access the winning_moves HashMap, so
         // we use `entry().or_insert()`. This allows us to insert a new vector
         // if there isn't one currently at the `marker` key.
-        let coords = self.winning_coords.entry(marker).or_insert(Vec::new());
+        let coords = self.winning_moves.entry(marker).or_insert(Vec::new());
         coords.push(winning_coord);
         //println!("Winning cell {:?} for {:?}", winning_coord, marker);
-
-        self.cell_flags[winning_coord.get_index()].push(CellFlags::WinningMove(marker));
     }
 
     fn get_winning_coords(&self, marker: Marker) -> Option<Vec<CellCoord>> {
-        if let Some(winning_moves) = self.winning_coords.get(&marker) {
+        if let Some(winning_moves) = self.winning_moves.get(&marker) {
             Some(winning_moves.clone())
         } else {
             None
         }
     }
 
+    fn add_potential_fork(&mut self, coord: CellCoord, set_type: SetType, marker: Marker) {
+        match marker {
+            Marker::X => self.x_potential_forks.push((coord, set_type)),
+            Marker::O => self.o_potential_forks.push((coord, set_type)),
+        }
+    }
+
+    fn get_fork_coords(&self, marker: Marker) -> Option<CellCoord> {
+        // Fork coordinates are the intersection of two sets (row, col, diag) that have
+        // fork potential.
+        let get_intersection = |set1: SetType, set2: SetType| -> Option<CellCoord> {
+            match (set1, set2) {
+                // Hmm. We have to account for any order of the sets. This is awkward.
+                // I should think of a better way.
+                (SetType::Row(row_index), SetType::Column(col_index)) => {
+                    println!("row and col");
+                    Some(CellCoord::new(row_index, col_index))
+                }
+                (SetType::Column(col_index), SetType::Row(row_index)) => {
+                    println!("col and row");
+                    Some(CellCoord::new(row_index, col_index))
+                }
+                // LEFTOFF: this doesn't work
+                // One marker has multiple potential sets, so its
+                // intersecting with itself.
+                (SetType::Row(row_index), SetType::Diag1) => {
+                    println!("row and diag1");
+                    Some(CellCoord::new(row_index, row_index))
+                }
+                (SetType::Diag1, SetType::Row(row_index)) => {
+                    println!("diag1 and row");
+                    Some(CellCoord::new(row_index, row_index))
+                }
+                (SetType::Row(row_index), SetType::Diag2) => {
+                    println!("row and diag2");
+                    Some(CellCoord::new(row_index, 2 - row_index))
+                }
+                (SetType::Diag2, SetType::Row(row_index)) => {
+                    println!("diag2 and row");
+                    Some(CellCoord::new(row_index, 2 - row_index))
+                }
+                (SetType::Column(col_index), SetType::Diag1) => {
+                    println!("col and diag1");
+                    Some(CellCoord::new(col_index, col_index))
+                }
+                (SetType::Diag1, SetType::Column(col_index)) => {
+                    println!("diag1 and col");
+                    Some(CellCoord::new(col_index, col_index))
+                }
+                (SetType::Column(col_index), SetType::Diag2) => {
+                    println!("col and diag2");
+                    Some(CellCoord::new(2 - col_index, col_index))
+                }
+                (SetType::Diag2, SetType::Column(col_index)) => {
+                    println!("diag2 and col");
+                    Some(CellCoord::new(2 - col_index, col_index))
+                }
+                _ => None,
+            }
+        };
+
+        // TODO: This only returns one forking coordinate. Maybe we want
+        // to list all of them.
+        match marker {
+            Marker::X => {
+                for entry1 in &self.x_potential_forks {
+                    for entry2 in &self.x_potential_forks {
+                        if entry1.0 != entry2.0 {
+                            return get_intersection(entry1.1, entry2.1);
+                        }
+                    }
+                }
+                None
+            }
+            Marker::O => {
+                for entry1 in &self.o_potential_forks {
+                    for entry2 in &self.o_potential_forks {
+                        if entry1.0 != entry2.0 {
+                            return get_intersection(entry1.1, entry2.1);
+                        }
+                    }
+                }
+                None
+            }
+        }
+    }
+
+    fn remove_corner_move(&mut self, coord: CellCoord) {
+        self.corner_moves.retain(|&cell_coord| cell_coord != coord);
+    }
+
+    fn remove_edge_move(&mut self, coord: CellCoord) {
+        self.edge_moves.retain(|&cell_coord| cell_coord != coord);
+    }
+
+    pub fn reset(&mut self) {
+        self.winning_moves.clear();
+        self.x_potential_forks.clear();
+        self.o_potential_forks.clear();
+    }
+
     pub fn print(&self) {
         for i in vec![Marker::X, Marker::O] {
-            if let Some(winning_moves) = self.winning_coords.get(&i) {
+            if let Some(winning_moves) = self.winning_moves.get(&i) {
                 if !winning_moves.is_empty() {
                     println!("Winning moves for {:?}:", i);
                     winning_moves.iter().for_each(|cell_coord| {
@@ -387,6 +460,27 @@ impl BoardMetadata {
                 }
             }
         }
+
+        println!("Corner moves:");
+        self.corner_moves.iter().for_each(|cell_coord| {
+            println!("  {:?}", cell_coord);
+        });
+        println!("Edge moves:");
+        self.edge_moves.iter().for_each(|cell_coord| {
+            println!("  {:?}", cell_coord);
+        });
+        println!("X Potential Forks:");
+        self.x_potential_forks.iter().for_each(|set_type| {
+            println!("  {:?}", set_type);
+        });
+        println!("O Potential Forks:");
+        self.o_potential_forks.iter().for_each(|set_type| {
+            println!("  {:?}", set_type);
+        });
+        println!("X forking moves:");
+        println!("{:?}", self.get_fork_coords(Marker::X));
+        println!("O forking moves:");
+        println!("{:?}", self.get_fork_coords(Marker::O));
     }
 }
 
@@ -574,5 +668,14 @@ mod tests {
         board.place_marker(CellCoord::new(2, 1), Marker::X);
         let winning_move = board.get_winning_move(Marker::X);
         assert_eq!(winning_move, None);
+    }
+
+    #[test]
+    fn gets_forking_move() {
+        let mut board = Board::new();
+        board.place_marker(CellCoord::new(0, 0), Marker::X);
+        board.place_marker(CellCoord::new(2, 2), Marker::X);
+        let forking_move = board.get_forking_move(Marker::X);
+        assert_eq!(forking_move, Some(CellCoord::new(0, 2)));
     }
 }

@@ -36,17 +36,17 @@ impl BasicAI {
         // Use a sleep here so it seems like the computer is thinking a bit.
         thread::sleep(time::Duration::from_secs(1));
 
+        // place winning move if there is one
+        if let Some(cell_coord) = board.get_winning_move(self.marker) {
+            return cell_coord;
+        }
+
+        // block opponent's winning move if they have one
+        if let Some(cell_coord) = board.get_winning_move(Marker::opposite(self.marker)) {
+            return cell_coord;
+        }
+
         loop {
-            // place winning move if there is one
-            if let Some(cell_coord) = board.get_winning_move(self.marker) {
-                break cell_coord;
-            }
-
-            // block opponent's winning move if they have one
-            if let Some(cell_coord) = board.get_winning_move(Marker::opposite(self.marker)) {
-                break cell_coord;
-            }
-
             let player_move = self.move_set.pop().unwrap_or_else(|| {
                 panic!(
                     "{} ran out of generated moves. You shouldn't need this many.",

@@ -70,7 +70,7 @@ a random choice computer player.
 tag: [`v3`](https://github.com/mikasaurus2/miktactoe/tree/v3)
 
 
-### make basic computer player
+### ✓make basic computer player
 
 I broke out the player implementations into separate submodules and implemented a basic
 AI player.
@@ -95,7 +95,7 @@ there are not multiple mutable references anymore.
 
 This makes the AI more fun already. :] You have to create a fork to win.
 
-### make computer that creates forks
+### ✓make computer that creates forks
 
 A fork creates two winning spaces. Here's how we can determine which moves
 would create forks for the computer.

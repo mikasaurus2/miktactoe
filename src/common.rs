@@ -20,14 +20,14 @@ pub enum CellState {
     Empty,
 }
 
-#[derive(Debug, Copy, Clone, PartialEq)]
+#[derive(Debug, Copy, Clone, PartialEq, Eq, Hash)]
 pub enum CellType {
     Corner,
     Edge,
     Center
 }
 
-#[derive(Debug, Copy, Clone, PartialEq)]
+#[derive(Debug, Copy, Clone, PartialEq, Eq, Hash)]
 pub struct CellCoord {
     pub row: usize,
     pub column: usize,

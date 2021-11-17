@@ -48,8 +48,17 @@ impl ForkingAI {
         }
 
         // make a fork if possible
-        if let Some(cell_coord) = board.get_forking_move(self.marker) {
-            return cell_coord;
+        let forking_moves = board.get_forking_move(self.marker);
+        if !forking_moves.is_empty() {
+            println!("making a fork");
+            return forking_moves[0];
+        }
+
+        // block opponent's fork
+        let opp_forking_moves = board.get_forking_move(Marker::opposite(self.marker));
+        if !opp_forking_moves.is_empty() {
+            println!("blocking forking move");
+            return forking_moves[0];
         }
 
         loop {

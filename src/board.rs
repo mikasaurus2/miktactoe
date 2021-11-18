@@ -81,11 +81,11 @@ impl Board {
                 Move::Valid
             } else {
                 println!("Cell already marked. Please try again.");
-                Move::Invalid
+                Move::AlreadyUsed
             }
         } else {
             println!("Out of bounds move. Please try again.");
-            Move::Invalid
+            Move::OutOfBounds
         }
     }
 
@@ -654,16 +654,16 @@ mod tests {
 
         board.place_marker(CellCoord::new(0, 0), marker);
         let move_type = board.validate_move(CellCoord::new(0, 0));
-        assert_eq!(move_type, Move::Invalid);
+        assert_eq!(move_type, Move::AlreadyUsed);
     }
 
     #[test]
     fn validates_out_of_bounds_move() {
         let board = Board::new();
         let move_type = board.validate_move(CellCoord::new(3, 0));
-        assert_eq!(move_type, Move::Invalid);
+        assert_eq!(move_type, Move::OutOfBounds);
         let move_type = board.validate_move(CellCoord::new(1, 3));
-        assert_eq!(move_type, Move::Invalid);
+        assert_eq!(move_type, Move::OutOfBounds);
     }
 
     #[test]

@@ -61,5 +61,6 @@ impl CellCoord {
 #[derive(Debug, PartialEq)]
 pub enum Move {
     Valid,
-    Invalid,
+    AlreadyUsed,
+    OutOfBounds,
 }

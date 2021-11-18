@@ -4,8 +4,8 @@ use rand::seq::SliceRandom;
 use rand::thread_rng;
 use std::{thread, time};
 
-pub struct ForkingAI {
-    pub name: String,
+pub struct ForkingAI<'a> {
+    pub name: &'a str,
     pub marker: Marker,
     move_set: Vec<CellCoord>,
 }
@@ -15,8 +15,8 @@ pub struct ForkingAI {
 //   2. block an opponents winning move
 //   3. create a fork if possible
 //   3. move randomly
-impl ForkingAI {
-    pub fn new(name: String, marker: Marker) -> ForkingAI {
+impl<'a> ForkingAI<'a> {
+    pub fn new(name: &str, marker: Marker) -> ForkingAI {
         let mut move_set: Vec<CellCoord> = itertools::iproduct!(0..3, 0..3)
             .map(|(row, column)| CellCoord::new(row, column))
             .collect();

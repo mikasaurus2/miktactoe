@@ -5,14 +5,14 @@ use rand::thread_rng;
 use std::{thread, time};
 
 
-pub struct RandomAI {
-    pub name: String,
+pub struct RandomAI<'a> {
+    pub name: &'a str,
     pub marker: Marker,
     move_set: Vec<CellCoord>,
 }
 
-impl RandomAI {
-    pub fn new(name: String, marker: Marker) -> RandomAI {
+impl<'a> RandomAI<'a> {
+    pub fn new(name: &str, marker: Marker) -> RandomAI {
         // To create the RandomAI's move set, we first use iproduct! macro
         // to make a cartesian product of our row and column ranges. This enumerates
         // all possible cell coordinates. We collect() it to form a vector of these

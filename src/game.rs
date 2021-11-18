@@ -9,42 +9,17 @@ use crate::player::{
     human::Human,
 };
 
-pub struct Game {
-    // Human players
-    //player1: Human,
-    //player2: Human,
-    // Computer players
-    //player1: RandomAI,
-    //player2: ForkingAI,
-    player1: OptimalAI,
-    player2: OptimalAI,
+pub struct Game<'a> {
+    player1: OptimalAI<'a>,
+    player2: OptimalAI<'a>,
     board: Board,
 }
 
-impl Game {
-    pub fn new() -> Game {
+impl<'a> Game<'a> {
+    pub fn new() -> Game<'a> {
         Game {
-            // Human players
-            //
-            //player1: Human {
-            //    name: String::from("Mike"),
-            //    marker: Marker::X,
-            //},
-            //player2: Human {
-            //    name: String::from("Steph"),
-            //    marker: Marker::O,
-            //},
-            player1: OptimalAI::new(String::from("Optimal1"), Marker::X),
-
-            // Computer players
-            //player1: OptimalAI::new(String::from("Computron"), Marker::X),
-            //player2: BasicAI::new(String::from("Hal9000"), Marker::O),
-            //player2: ForkingAI::new(String::from("Forking"), Marker::O),
-            player2: OptimalAI::new(String::from("Optimal2"), Marker::O),
-            //player2: Human {
-            //    name: String::from("Steph"),
-            //    marker: Marker::O,
-            //},
+            player1: OptimalAI::new("Optimal1", Marker::X),
+            player2: OptimalAI::new("Optimal2", Marker::O),
             board: Board::new(),
         }
     }

@@ -2,13 +2,13 @@ use crate::board::{Board, SetType};
 use crate::common::*;
 use std::{thread, time};
 
-pub struct OptimalAI {
-    pub name: String,
+pub struct OptimalAI<'a> {
+    pub name: &'a str,
     pub marker: Marker,
 }
 
-impl OptimalAI {
-    pub fn new(name: String, marker: Marker) -> OptimalAI {
+impl<'a> OptimalAI<'a> {
+    pub fn new(name: &str, marker: Marker) -> OptimalAI {
         OptimalAI { name, marker }
     }
 
@@ -149,5 +149,22 @@ impl OptimalAI {
             }
         }
         result
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn makes_winning_move() {
+        let marker = Marker::X;
+        let mut board = Board::new();
+        board.place_marker(CellCoord::new(0, 0), marker);
+        board.place_marker(CellCoord::new(0, 1), marker);
+        board.place_marker(CellCoord::new(0, 2), marker);
+
+        let optimal_ai = OptimalAI::new("TestOptimal", marker);
+        assert_eq!(optimal_ai.get_valid_move(&board), CellCoord::new());
     }
 }

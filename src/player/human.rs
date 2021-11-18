@@ -3,13 +3,16 @@ use crate::common::*;
 use std::io;
 
 #[derive(Debug)]
-pub struct Human {
-    pub name: String,
+pub struct Human<'a> {
+    pub name: &'a str,
     pub marker: Marker,
 }
 
-impl Human {
-    #[allow(dead_code)]
+impl<'a> Human<'a> {
+    pub fn new(name: &str, marker: Marker) -> Human {
+        Human { name, marker }
+    }
+
     pub fn get_valid_move(&self, board: &Board) -> CellCoord {
         loop {
             let mut input = String::new();

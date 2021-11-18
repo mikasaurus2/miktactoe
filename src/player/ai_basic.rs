@@ -4,8 +4,8 @@ use rand::seq::SliceRandom;
 use rand::thread_rng;
 use std::{thread, time};
 
-pub struct BasicAI {
-    pub name: String,
+pub struct BasicAI<'a> {
+    pub name: &'a str,
     pub marker: Marker,
     move_set: Vec<CellCoord>,
 }
@@ -14,8 +14,8 @@ pub struct BasicAI {
 //   1. make a winning move
 //   2. block an opponents winning move
 //   3. move randomly
-impl BasicAI {
-    pub fn new(name: String, marker: Marker) -> BasicAI {
+impl<'a> BasicAI<'a> {
+    pub fn new(name: &str, marker: Marker) -> BasicAI {
         let mut move_set: Vec<CellCoord> = itertools::iproduct!(0..3, 0..3)
             .map(|(row, column)| CellCoord::new(row, column))
             .collect();

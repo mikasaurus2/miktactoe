@@ -700,12 +700,57 @@ mod tests {
         assert_eq!(winning_move, None);
     }
 
-    //#[test]
-    //fn gets_forking_move() {
-    //    let mut board = Board::new();
-    //    board.place_marker(CellCoord::new(0, 0), Marker::X);
-    //    board.place_marker(CellCoord::new(2, 2), Marker::X);
-    //    let forking_move = board.get_forking_move(Marker::X);
-    //    assert_eq!(forking_move, Some(CellCoord::new(0, 2)));
-    //}
+    #[test]
+    fn gets_forking_move() {
+        let mut board = Board::new();
+        board.place_marker(CellCoord::new(0, 0), Marker::X);
+        board.place_marker(CellCoord::new(2, 2), Marker::X);
+        let mut forking_moves = board.get_forking_move(Marker::X);
+        forking_moves.sort();
+        assert_eq!(forking_moves.len(), 2);
+        assert_eq!(forking_moves[0], CellCoord::new(0, 2));
+        assert_eq!(forking_moves[1], CellCoord::new(2, 0));
+    }
+
+    #[test]
+    fn gets_corner_moves() {
+        let mut board = Board::new();
+        let mut corners = Vec::new();
+        while let Some(coord) = board.get_corner_move() {
+            corners.push(coord);
+            board.place_marker(coord, Marker::X);
+        }
+        corners.sort();
+        assert_eq!(corners.len(), 4);
+        assert_eq!(
+            corners,
+            vec![
+                CellCoord::new(0, 0),
+                CellCoord::new(0, 2),
+                CellCoord::new(2, 0),
+                CellCoord::new(2, 2)
+            ]
+        );
+    }
+
+    #[test]
+    fn gets_edge_moves() {
+        let mut board = Board::new();
+        let mut edges = Vec::new();
+        while let Some(coord) = board.get_edge_move() {
+            edges.push(coord);
+            board.place_marker(coord, Marker::X);
+        }
+        edges.sort();
+        assert_eq!(edges.len(), 4);
+        assert_eq!(
+            edges,
+            vec![
+                CellCoord::new(0, 1),
+                CellCoord::new(1, 0),
+                CellCoord::new(1, 2),
+                CellCoord::new(2, 1)
+            ]
+        );
+    }
 }

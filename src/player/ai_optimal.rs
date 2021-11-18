@@ -12,7 +12,7 @@ impl<'a> OptimalAI<'a> {
         OptimalAI { name, marker }
     }
 
-    pub fn get_valid_move(&mut self, board: &Board) -> CellCoord {
+    pub fn get_valid_move(&self, board: &Board) -> CellCoord {
         println!("{}'s turn.", self.name);
 
         // Use a sleep here so it seems like the computer is thinking a bit.
@@ -162,9 +162,19 @@ mod tests {
         let mut board = Board::new();
         board.place_marker(CellCoord::new(0, 0), marker);
         board.place_marker(CellCoord::new(0, 1), marker);
-        board.place_marker(CellCoord::new(0, 2), marker);
 
         let optimal_ai = OptimalAI::new("TestOptimal", marker);
-        assert_eq!(optimal_ai.get_valid_move(&board), CellCoord::new());
+        assert_eq!(optimal_ai.get_valid_move(&board), CellCoord::new(0, 2));
+    }
+
+    #[test]
+    fn blocks_winning_move() {
+        let opponent = Marker::X;
+        let mut board = Board::new();
+        board.place_marker(CellCoord::new(0, 0), opponent);
+        board.place_marker(CellCoord::new(0, 1), opponent);
+
+        let optimal_ai = OptimalAI::new("TestOptimal", Marker::opposite(opponent));
+        assert_eq!(optimal_ai.get_valid_move(&board), CellCoord::new(0, 2));
     }
 }

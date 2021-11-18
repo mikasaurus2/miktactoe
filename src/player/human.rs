@@ -33,8 +33,16 @@ impl<'a> Human<'a> {
             let row: usize = input.trim().parse().expect("Please type a number!");
 
             let player_move = CellCoord::new(row, column);
-            if let Move::Valid = board.validate_move(player_move) {
-                return player_move;
+            match board.validate_move(player_move) {
+                Move::Valid => break player_move,
+                Move::AlreadyUsed => {
+                    println!("Cell already marked. Please try again.");
+                    continue;
+                }
+                Move::OutOfBounds => {
+                    println!("Out of bounds move. Please try again.");
+                    continue;
+                }
             }
         }
     }

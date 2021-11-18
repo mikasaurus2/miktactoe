@@ -80,11 +80,9 @@ impl Board {
             if let CellState::Empty = self.cells[cell_coord.row][cell_coord.column] {
                 Move::Valid
             } else {
-                println!("Cell already marked. Please try again.");
                 Move::AlreadyUsed
             }
         } else {
-            println!("Out of bounds move. Please try again.");
             Move::OutOfBounds
         }
     }

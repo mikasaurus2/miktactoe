@@ -176,6 +176,8 @@ the optimal algorithm.
 
 The above algorithm is implemented in `ai_optimal.rs`.
 
+tag: [`v5`](https://github.com/mikasaurus2/miktactoe/tree/v5)
+
 ### add text user interface representation
 ### allow choosing human or computer players
 ### make web service to serve games to clients

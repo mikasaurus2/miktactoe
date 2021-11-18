@@ -174,6 +174,7 @@ with an initial dummy computer that just played randomly. Then I iterated on
 the computer's algorithm, building each step we ultimately need to implement
 the optimal algorithm.
 
+The above algorithm is implemented in `ai_optimal.rs`.
 
 ### add text user interface representation
 ### allow choosing human or computer players

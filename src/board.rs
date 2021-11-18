@@ -1,4 +1,6 @@
 use crate::common::*;
+use rand::seq::SliceRandom;
+use rand::thread_rng;
 use std::collections::{HashMap, HashSet};
 
 pub struct Board {
@@ -17,7 +19,7 @@ pub enum BoardState {
 type SetIndex = usize;
 
 #[derive(Debug, Copy, Clone)]
-enum SetType {
+pub enum SetType {
     Row(SetIndex),
     Column(SetIndex),
     Diag1,
@@ -307,8 +309,11 @@ impl Board {
     }
 
     pub fn get_forking_move(&self, marker: Marker) -> Vec<CellCoord> {
-        let result = self.metadata.get_fork_coords(marker);
-        result.into_iter().collect()
+        self.metadata.get_fork_coords(marker).into_iter().collect()
+    }
+
+    pub fn get_single_marker_sets(&self, marker: Marker) -> Vec<(CellCoord, SetType)> {
+        self.metadata.get_potential_forks(marker)
     }
 
     pub fn get_corner_move(&self) -> Option<CellCoord> {
@@ -449,12 +454,15 @@ impl BoardMetadata {
         result
     }
 
-    fn get_corner_coords(&self) -> Option<CellCoord> {
-        if self.corner_moves.is_empty() {
-            None
-        } else {
-            Some(self.corner_moves[0])
+    fn get_potential_forks(&self, marker: Marker) -> Vec<(CellCoord, SetType)> {
+        match marker {
+            Marker::X => self.x_potential_forks.clone(),
+            Marker::O => self.o_potential_forks.clone(),
         }
+    }
+
+    fn get_corner_coords(&self) -> Option<CellCoord> {
+        self.corner_moves.choose(&mut rand::thread_rng()).copied()
     }
 
     fn remove_corner_move(&mut self, coord: CellCoord) {
@@ -462,11 +470,7 @@ impl BoardMetadata {
     }
 
     fn get_edge_coords(&self) -> Option<CellCoord> {
-        if self.edge_moves.is_empty() {
-            None
-        } else {
-            Some(self.edge_moves[0])
-        }
+        self.edge_moves.choose(&mut rand::thread_rng()).copied()
     }
 
     fn remove_edge_move(&mut self, coord: CellCoord) {

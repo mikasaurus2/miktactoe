@@ -1,4 +1,4 @@
-use crate::board::Board;
+use crate::board::{Board, SetType};
 use crate::common::*;
 use std::{thread, time};
 
@@ -9,10 +9,7 @@ pub struct OptimalAI {
 
 impl OptimalAI {
     pub fn new(name: String, marker: Marker) -> OptimalAI {
-        OptimalAI {
-            name,
-            marker,
-        }
+        OptimalAI { name, marker }
     }
 
     pub fn get_valid_move(&mut self, board: &Board) -> CellCoord {
@@ -28,6 +25,7 @@ impl OptimalAI {
 
         // block opponent's winning move if they have one
         if let Some(cell_coord) = board.get_winning_move(Marker::opposite(self.marker)) {
+            println!("blocking a winning move");
             return cell_coord;
         }
 
@@ -39,17 +37,16 @@ impl OptimalAI {
         }
 
         // block opponent's fork
-        // LEFTOFF:
-        // if there's only one fork, block it
-        // otherwise, make 2 in a row to force other player to defend
-        let forking_moves = board.get_forking_move(Marker::opposite(self.marker));
-
-        if forking_moves.len() == 1 {
+        let opp_forking_moves = board.get_forking_move(Marker::opposite(self.marker));
+        if opp_forking_moves.len() == 1 {
             println!("blocking forking move");
-            return forking_moves[0];
+            return opp_forking_moves[0];
         }
-        if forking_moves.len() > 1 {
-            println!("more than one forking move for opponent: placing to make opponent defend");
+
+        // force opponent to defend
+        if let Some(cell_coord) = self.force_defending_move(&board, &opp_forking_moves) {
+            println!("forcing opponent defend");
+            return cell_coord;
         }
 
         // play center
@@ -57,6 +54,10 @@ impl OptimalAI {
             println!("playing center");
             return CellCoord::new(1, 1);
         }
+
+        // According to wikipedia, the computer should play the opposite corner here
+        // if its opponent is in a corner. I'm not sure what that means though, and
+        // the current algorithm seems optimal already. Not implementing for now.
 
         // play empty corner
         if let Some(cell_coord) = board.get_corner_move() {
@@ -70,7 +71,83 @@ impl OptimalAI {
             return cell_coord;
         }
 
-        // Code should not get here
-        CellCoord::new(0, 0)
+        panic!("Unexpected path in OptimalAI::get_valid_move() logic");
+    }
+
+    fn force_defending_move(
+        &self,
+        board: &Board,
+        forking_moves: &Vec<CellCoord>,
+    ) -> Option<CellCoord> {
+        // Try to place 2 in a row to force opp to defend
+        // without providing them a forking move.
+        let single_marker_sets = board.get_single_marker_sets(self.marker);
+
+        for (coord, set_type) in single_marker_sets {
+            //println!("Considering {:?}", set_type);
+            let empties: Vec<CellCoord> = self.get_empties(coord, set_type);
+            let both_empties_are_forks = empties.iter().all(|&empty| {
+                if let Some(_) = forking_moves
+                    .iter()
+                    .find(|&&forking_move| forking_move == empty)
+                {
+                    return true;
+                } else {
+                    return false;
+                }
+            });
+
+            if both_empties_are_forks {
+                //println!("Both empties are forks for {:?}", set_type);
+                continue;
+            }
+
+            for &empty in empties.iter() {
+                if let Some(&coord) = forking_moves.iter().find(|&&coord| coord == empty) {
+                    return Some(coord);
+                }
+            }
+            return Some(empties[0]);
+        }
+        None
+    }
+
+    fn get_empties(&self, placed: CellCoord, set_type: SetType) -> Vec<CellCoord> {
+        let mut result = Vec::new();
+        match set_type {
+            SetType::Row(row) => {
+                for col in 0..3 {
+                    let coord = CellCoord::new(row, col);
+                    if placed != coord {
+                        result.push(coord);
+                    }
+                }
+            }
+            SetType::Column(col) => {
+                for row in 0..3 {
+                    let coord = CellCoord::new(row, col);
+                    if placed != coord {
+                        result.push(coord);
+                    }
+                }
+            }
+            SetType::Diag1 => {
+                for index in 0..3 {
+                    let coord = CellCoord::new(index, index);
+                    if placed != coord {
+                        result.push(coord);
+                    }
+                }
+            }
+            SetType::Diag2 => {
+                for index in 0..3 {
+                    let coord = CellCoord::new(index, 2 - index);
+                    if placed != coord {
+                        result.push(coord);
+                    }
+                }
+            }
+        }
+        result
     }
 }

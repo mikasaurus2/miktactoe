@@ -330,7 +330,6 @@ impl Board {
 }
 
 struct BoardMetadata {
-    // winning coords: map of Marker to vector of CellCoord
     winning_moves: HashMap<Marker, Vec<CellCoord>>,
     corner_moves: Vec<CellCoord>,
     edge_moves: Vec<CellCoord>,
@@ -367,7 +366,6 @@ impl BoardMetadata {
         // if there isn't one currently at the `marker` key.
         let coords = self.winning_moves.entry(marker).or_insert(Vec::new());
         coords.push(winning_coord);
-        //println!("Winning cell {:?} for {:?}", winning_coord, marker);
     }
 
     fn get_winning_coords(&self, marker: Marker) -> Option<Vec<CellCoord>> {

@@ -3,7 +3,7 @@
 //mod player;
 //
 use crate::board::{Board, BoardState};
-use crate::common::Marker;
+use crate::common::{CellCoord, Marker};
 use crate::player::{
     ai_basic::BasicAI, ai_forking::ForkingAI, ai_optimal::OptimalAI, ai_random::RandomAI,
     human::Human,
@@ -13,6 +13,20 @@ pub struct Game<'a> {
     player1: OptimalAI<'a>,
     player2: OptimalAI<'a>,
     board: Board,
+    record: Record<'a>,
+}
+
+enum Winner {
+    Player1,
+    Player2,
+    None,
+}
+
+struct Record<'a> {
+    player1: &'a str,
+    player2: &'a str,
+    winner: Winner,
+    move_history: Vec<CellCoord>,
 }
 
 impl<'a> Game<'a> {
@@ -20,7 +34,10 @@ impl<'a> Game<'a> {
         Game {
             player1: OptimalAI::new("Optimal1", Marker::X),
             player2: OptimalAI::new("Optimal2", Marker::O),
+            //player1: Human::new("steph", Marker::X),
+            //player2: Human::new("mike", Marker::O),
             board: Board::new(),
+            record: Record::new("steph", "mike"),
         }
     }
 
@@ -29,6 +46,7 @@ impl<'a> Game<'a> {
         loop {
             let mut player_move = self.player1.get_valid_move(&self.board);
             self.board.place_marker(player_move, self.player1.marker);
+            self.record.record_move(player_move);
             //self.board.print_info();
             self.board.display();
             match self
@@ -37,17 +55,20 @@ impl<'a> Game<'a> {
             {
                 BoardState::Win => {
                     println!("{} won!", self.player1.name);
+                    self.record.record_outcome(Winner::Player1);
                     break;
                 }
                 BoardState::Tie => {
                     println!("The game was a tie!");
-                    return;
+                    self.record.record_outcome(Winner::None);
+                    break;
                 }
                 BoardState::Playing => (),
             }
 
             player_move = self.player2.get_valid_move(&self.board);
             self.board.place_marker(player_move, self.player2.marker);
+            self.record.record_move(player_move);
             //self.board.print_info();
             self.board.display();
             match self
@@ -56,14 +77,57 @@ impl<'a> Game<'a> {
             {
                 BoardState::Win => {
                     println!("{} won!", self.player2.name);
+                    self.record.record_outcome(Winner::Player2);
                     break;
                 }
                 BoardState::Tie => {
                     println!("The game was a tie!");
-                    return;
+                    self.record.record_outcome(Winner::None);
+                    break;
                 }
                 BoardState::Playing => (),
             }
+        }
+        self.record.print_game_history();
+    }
+}
+
+impl<'a> Record<'a> {
+    fn new(player1: &'a str, player2: &'a str) -> Record<'a> {
+        Record {
+            player1,
+            player2,
+            winner: Winner::None,
+            move_history: Vec::new(),
+        }
+    }
+
+    fn record_move(&mut self, player_move: CellCoord) {
+        self.move_history.push(player_move);
+    }
+
+    fn record_outcome(&mut self, winner: Winner) {
+        self.winner = winner;
+    }
+
+    fn print_game_history(&self) {
+        println!("Player1 ({})", self.player1);
+        println!("Player2 ({})", self.player2);
+        self.move_history
+            .iter()
+            .enumerate()
+            .map(|(index, coord)| match (index + 1) % 2 {
+                1 => (index + 1, Marker::X, coord),
+                0 => (index + 1, Marker::O, coord),
+                _ => (0, Marker::X, coord),
+            })
+            .for_each(|(index, marker, coord)| {
+                println!("{}: {:?} {:?}", index, marker, coord);
+            });
+        match self.winner {
+            Winner::Player1 => println!("Player1 ({}) won", self.player1),
+            Winner::Player2 => println!("Player2 ({}) won", self.player2),
+            Winner::None => println!("Game tied"),
         }
     }
 }

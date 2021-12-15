@@ -9,3 +9,5 @@ edition = "2018"
 [dependencies]
 itertools = "0.10.0"
 rand = "0.8.4"
+crossterm = "0.20"
+tui = { version = "0.16", default-features = false, features = ['crossterm'] }

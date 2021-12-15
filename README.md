@@ -179,6 +179,17 @@ The above algorithm is implemented in `ai_optimal.rs`.
 tag: [`v5`](https://github.com/mikasaurus2/miktactoe/tree/v5)
 
 ### add text user interface representation
+Let's add a text use interface to provide a cleaner interface for the
+player.
+
 ### allow choosing human or computer players
+A text user interface will allow the human player to choose
+which AI opponent they'd like to play.
+
+This requires modifying how the Game stores the players. We no
+longer know at compile time who is playing. We'll need to use
+Rust traits to handle this.
+
+TODO: explain how
 ### make web service to serve games to clients
 ### run web service on cloud

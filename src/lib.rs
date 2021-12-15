@@ -7,7 +7,7 @@ mod common;
 mod game;
 mod player;
 
-use std::io;
+use std::{fmt, io};
 
 use tui::{
     backend::{Backend, CrosstermBackend},
@@ -27,6 +27,20 @@ use crossterm::{
 struct MenuList<T> {
     state: ListState,
     items: Vec<T>,
+}
+
+#[derive(Debug, PartialEq, Copy, Clone)]
+enum MainMenuEntry {
+    Play,
+    Exit,
+}
+
+// We need to implement display here so we can convert the enum
+// into a string.
+impl fmt::Display for MainMenuEntry {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "{:?}", self)
+    }
 }
 
 impl<T> MenuList<T> {
@@ -67,28 +81,24 @@ impl<T> MenuList<T> {
     }
 }
 
-struct App<'a> {
-    main_menu: MenuList<&'a str>,
+struct App {
+    main_menu: MenuList<MainMenuEntry>,
     selected_cell: u8,
 }
 
-impl<'a> App<'a> {
-    fn new() -> App<'a> {
+impl App {
+    fn new() -> App {
         App {
-            main_menu: MenuList::with_items(vec!["Play", "Exit"]),
+            main_menu: MenuList::with_items(vec![MainMenuEntry::Play, MainMenuEntry::Exit]),
             selected_cell: 0,
         }
     }
 
-    fn handle_main_menu_enter(&self) {
+    fn handle_main_menu_enter(&self) -> MainMenuEntry {
         match self.main_menu.state.selected() {
-            Some(i) => match self.main_menu.items[i] {
-                "Play" => {} // draw the board
-                "Exit" => {}
-                _ => {}
-            },
-            None => {}
-        };
+            Some(i) => self.main_menu.items[i],
+            None => MainMenuEntry::Exit,
+        }
     }
 
     fn update_selected_cell(&mut self, key: &KeyCode) {
@@ -119,36 +129,34 @@ pub fn run_app() -> io::Result<()> {
 
     let mut app = App::new();
 
-    loop {
+    let choice = loop {
         terminal.draw(|f| menu_ui(f, &mut app))?;
 
         if let Event::Key(key) = event::read()? {
             match key.code {
-                KeyCode::Char('q') => break,
                 KeyCode::Down => app.main_menu.next(),
                 KeyCode::Up => app.main_menu.previous(),
-                KeyCode::Enter => {
-                    app.handle_main_menu_enter();
-                    break;
-                }
+                KeyCode::Enter => break app.handle_main_menu_enter(),
                 _ => {}
             }
         }
-    }
+    };
 
-    loop {
-        terminal.draw(|f| board_ui(f, &mut app))?;
+    if choice == MainMenuEntry::Play {
+        loop {
+            terminal.draw(|f| board_ui(f, &mut app))?;
 
-        if let Event::Key(key) = event::read()? {
-            match key.code {
-                KeyCode::Char('q') => break,
-                KeyCode::Up | KeyCode::Down | KeyCode::Left | KeyCode::Right => {
-                    app.update_selected_cell(&key.code);
+            if let Event::Key(key) = event::read()? {
+                match key.code {
+                    KeyCode::Char('q') => break,
+                    KeyCode::Up | KeyCode::Down | KeyCode::Left | KeyCode::Right => {
+                        app.update_selected_cell(&key.code);
+                    }
+                    KeyCode::Enter => {
+                        break;
+                    }
+                    _ => {}
                 }
-                KeyCode::Enter => {
-                    break;
-                }
-                _ => {}
             }
         }
     }
@@ -193,9 +201,7 @@ fn menu_ui<B: Backend>(f: &mut Frame<B>, app: &mut App) {
         .main_menu
         .items
         .iter()
-        .map(|&i| {
-            ListItem::new(Span::raw(String::from(i))).style(Style::default().fg(Color::White))
-        })
+        .map(|&i| ListItem::new(Span::raw(i.to_string())).style(Style::default().fg(Color::White)))
         .collect();
 
     let items = List::new(items)
@@ -264,7 +270,6 @@ fn board_ui<B: Backend>(f: &mut Frame<B>, app: &mut App) {
             } else {
                 Style::default().fg(Color::Red)
             };
-
 
             let marker = List::new([ListItem::new(Span::raw(format!("{:^3}", "X")))]).block(
                 Block::default()

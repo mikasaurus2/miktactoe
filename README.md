@@ -151,7 +151,7 @@ the forking move. This update happens after every player move.
 tag: [`v4`](https://github.com/mikasaurus2/miktactoe/tree/v4)
  
 
-### make optimal computer player
+### ✓make optimal computer player
 Wikipedia has a really great article on TicTacToe [here](https://en.wikipedia.org/wiki/Tic-tac-toe).
 
 Here's the description of the optimal algorithm.
@@ -178,18 +178,24 @@ The above algorithm is implemented in `ai_optimal.rs`.
 
 tag: [`v5`](https://github.com/mikasaurus2/miktactoe/tree/v5)
 
-### add text user interface representation
+### ✓add text user interface representation
 Let's add a text use interface to provide a cleaner interface for the
-player.
+player. The player now has a main menu with the options to play the game or exit.
+
+I had to modify the Game structure to integrate with the text interface
+update and draw capability. The Game structure will no longer be responsible
+for printing out the tic-tac-toe board.
+
+To accomplish this, I had to add some new methods for the Game struct. I'm no
+longer just calling run() and letting it step through the states. Now, the App
+structure is stepping, so Game will need to provide access to methods that
+input player moves and get the game state (because the UI will need that info
+to draw the board properly).
+
+Now, there is a higher level App structure that encapsulates the Game. The App
+is responsible for interacting with the UI. This includes all the menus
+that a user would interact with, and their corresponding state.
 
 ### allow choosing human or computer players
-A text user interface will allow the human player to choose
-which AI opponent they'd like to play.
-
-This requires modifying how the Game stores the players. We no
-longer know at compile time who is playing. We'll need to use
-Rust traits to handle this.
-
-TODO: explain how
 ### make web service to serve games to clients
 ### run web service on cloud

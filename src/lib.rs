@@ -10,7 +10,7 @@ mod player;
 use std::{fmt, io, thread::sleep};
 
 use common::CellCoord;
-use game::{Game, GameState};
+use game::{Game, GameState, Winner};
 
 use tui::{
     backend::{Backend, CrosstermBackend},
@@ -38,11 +38,26 @@ enum MainMenuEntry {
     Exit,
 }
 
+#[derive(Debug, PartialEq, Copy, Clone)]
+enum EndMenuEntry {
+    PlayAgain,
+    Exit,
+}
+
 // We need to implement display here so we can convert the enum
 // into a string.
 impl fmt::Display for MainMenuEntry {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(f, "{:?}", self)
+    }
+}
+
+impl fmt::Display for EndMenuEntry {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        match self {
+            EndMenuEntry::PlayAgain => write!(f, "Play Again"),
+            EndMenuEntry::Exit => write!(f, "Exit"),
+        }
     }
 }
 
@@ -86,6 +101,7 @@ impl<T> MenuList<T> {
 
 struct App<'a> {
     main_menu: MenuList<MainMenuEntry>,
+    end_menu: MenuList<EndMenuEntry>,
     selected_cell: u8,
     game: Game<'a>,
 }
@@ -94,6 +110,7 @@ impl<'a> App<'a> {
     fn new() -> App<'a> {
         App {
             main_menu: MenuList::with_items(vec![MainMenuEntry::Play, MainMenuEntry::Exit]),
+            end_menu: MenuList::with_items(vec![EndMenuEntry::PlayAgain, EndMenuEntry::Exit]),
             selected_cell: 0,
             game: Game::new(),
         }
@@ -103,6 +120,13 @@ impl<'a> App<'a> {
         match self.main_menu.state.selected() {
             Some(i) => self.main_menu.items[i],
             None => MainMenuEntry::Exit,
+        }
+    }
+
+    fn handle_end_menu_enter(&self) -> EndMenuEntry {
+        match self.end_menu.state.selected() {
+            Some(i) => self.end_menu.items[i],
+            None => EndMenuEntry::Exit,
         }
     }
 
@@ -122,6 +146,10 @@ impl<'a> App<'a> {
             KeyCode::Up if self.selected_cell > 2 => self.selected_cell -= 3,
             _ => {}
         }
+    }
+
+    fn restart_game(&mut self) {
+        self.game = Game::new();
     }
 }
 
@@ -148,35 +176,54 @@ pub fn run_app() -> io::Result<()> {
     };
 
     if choice == MainMenuEntry::Play {
-        let mut game_state = app.game.run();
         loop {
-            terminal.draw(|f| board_ui(f, &mut app))?;
+            let mut game_state = app.game.run();
+            let choice = loop {
+                terminal.draw(|f| board_ui(f, &mut app))?;
 
-            if game_state == GameState::Player1Turn {
-                if let Event::Key(key) = event::read()? {
-                    match key.code {
-                        KeyCode::Char('q') => break,
-                        KeyCode::Up | KeyCode::Down | KeyCode::Left | KeyCode::Right => {
-                            app.update_selected_cell(&key.code);
+                match game_state {
+                    GameState::Player1Turn => {
+                        if let Event::Key(key) = event::read()? {
+                            match key.code {
+                                KeyCode::Char('q') => break EndMenuEntry::Exit,
+                                KeyCode::Up | KeyCode::Down | KeyCode::Left | KeyCode::Right => {
+                                    app.update_selected_cell(&key.code);
+                                }
+                                KeyCode::Enter => {
+                                    let player_move = CellCoord::new(
+                                        usize::from(app.selected_cell / 3),
+                                        usize::from(app.selected_cell % 3),
+                                    );
+                                    game_state = app.game.make_human_move(player_move);
+                                    continue;
+                                }
+                                _ => {}
+                            }
                         }
-                        KeyCode::Enter => {
-                            let player_move = CellCoord::new(
-                                usize::from(app.selected_cell / 3),
-                                usize::from(app.selected_cell % 3),
-                            );
-                            game_state = app.game.make_human_move(player_move);
-                            continue;
+                    }
+                    GameState::Player2Turn => {
+                        game_state = app.game.run();
+                    }
+                    GameState::Done => {
+                        if let Event::Key(key) = event::read()? {
+                            match key.code {
+                                KeyCode::Down => app.end_menu.next(),
+                                KeyCode::Up => app.end_menu.previous(),
+                                KeyCode::Enter => break app.handle_end_menu_enter(),
+                                _ => {}
+                            }
                         }
-                        _ => {}
                     }
                 }
-            } else if game_state == GameState::Player2Turn {
-                game_state = app.game.run();
-            } else {
-                break;
+            };
+
+            match choice {
+                EndMenuEntry::PlayAgain => app.restart_game(),
+                EndMenuEntry::Exit => break,
             }
         }
     }
+
     disable_raw_mode()?;
     execute!(
         terminal.backend_mut(),
@@ -228,7 +275,7 @@ fn menu_ui<B: Backend>(f: &mut Frame<B>, app: &mut App) {
 
 fn board_ui<B: Backend>(f: &mut Frame<B>, app: &mut App) {
     let chunks = Layout::default()
-        .direction(Direction::Horizontal)
+        .direction(Direction::Vertical)
         .constraints(
             [
                 Constraint::Percentage(33),
@@ -239,8 +286,8 @@ fn board_ui<B: Backend>(f: &mut Frame<B>, app: &mut App) {
         )
         .split(f.size());
 
-    let center_chunk = Layout::default()
-        .direction(Direction::Vertical)
+    let center_chunks = Layout::default()
+        .direction(Direction::Horizontal)
         .constraints(
             [
                 Constraint::Percentage(33),
@@ -249,12 +296,50 @@ fn board_ui<B: Backend>(f: &mut Frame<B>, app: &mut App) {
             ]
             .as_ref(),
         )
-        .split(chunks[1])[1];
+        .split(chunks[1]);
+
+    // If the Game is done, show the result, and allow user
+    // to select whether to play again.
+    if app.game.get_game_state() == GameState::Done {
+        let left_box = center_chunks[0];
+        let left_chunks = Layout::default()
+            .direction(Direction::Vertical)
+            .constraints([Constraint::Percentage(50), Constraint::Percentage(50)].as_ref())
+            .split(left_box);
+
+        let text = match app.game.get_winner() {
+            Winner::Player1 => "Player 1 Won!",
+            Winner::Player2 => "Player 2 Won!",
+            Winner::None => "The game was a tie!",
+        };
+        let end_prompt = List::new([ListItem::new(Span::raw(text))]).block(
+            Block::default()
+                //.border_style(Style::default().fg(Color::Blue))
+                .borders(Borders::ALL),
+        );
+        f.render_widget(end_prompt, left_chunks[0]);
+
+        let items: Vec<ListItem> = app
+            .end_menu
+            .items
+            .iter()
+            .map(|&i| {
+                ListItem::new(Span::raw(i.to_string())).style(Style::default().fg(Color::White))
+            })
+            .collect();
+
+        let items = List::new(items)
+            .block(Block::default().borders(Borders::ALL).title("Menu"))
+            .highlight_style(Style::default().add_modifier(Modifier::BOLD))
+            .highlight_symbol(">> ");
+        f.render_stateful_widget(items, left_chunks[1], &mut app.end_menu.state)
+    }
 
     // The block layout with TUI is a bit weird. The last block
     // will try to fill the remaining space in the parent block.
     // As a result, I added a fourth block for which I don't draw
     // a border. That way, only the 3x3 board is displayed.
+    let center_box = center_chunks[1];
     let rows = Layout::default()
         .direction(Direction::Vertical)
         .constraints(
@@ -266,7 +351,7 @@ fn board_ui<B: Backend>(f: &mut Frame<B>, app: &mut App) {
             ]
             .as_ref(),
         )
-        .split(center_chunk);
+        .split(center_box);
 
     let mut cell_index = 0;
     for row in &rows[0..3] {

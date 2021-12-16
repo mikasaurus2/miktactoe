@@ -13,7 +13,8 @@ pub struct Game<'a> {
     state: GameState,
 }
 
-enum Winner {
+#[derive(Copy, Clone)]
+pub enum Winner {
     Player1,
     Player2,
     None,
@@ -22,7 +23,7 @@ enum Winner {
 struct Record<'a> {
     player1: &'a str,
     player2: &'a str,
-    winner: Winner,
+    pub winner: Winner,
     move_history: Vec<CellCoord>,
 }
 
@@ -52,9 +53,15 @@ impl<'a> Game<'a> {
             GameState::Player2Turn => {
                 let comp_move = self.player2.get_valid_move(&self.board);
                 self.board.place_marker(comp_move, self.player2.marker);
+                self.record.record_move(comp_move);
                 match self.board.check_board_state(comp_move, self.player2.marker) {
-                    BoardState::Win | BoardState::Tie => {
+                    BoardState::Win => {
                         self.state = GameState::Done;
+                        self.record.record_outcome(Winner::Player2);
+                    }
+                    BoardState::Tie => {
+                        self.state = GameState::Done;
+                        self.record.record_outcome(Winner::None);
                     }
                     BoardState::Playing => {
                         self.state = GameState::Player1Turn;
@@ -70,12 +77,18 @@ impl<'a> Game<'a> {
         if self.state == GameState::Player1Turn {
             if self.board.validate_move(player_move) == Move::Valid {
                 self.board.place_marker(player_move, self.player1.marker);
+                self.record.record_move(player_move);
                 match self
                     .board
                     .check_board_state(player_move, self.player1.marker)
                 {
-                    BoardState::Win | BoardState::Tie => {
+                    BoardState::Win => {
                         self.state = GameState::Done;
+                        self.record.record_outcome(Winner::Player1);
+                    }
+                    BoardState::Tie => {
+                        self.state = GameState::Done;
+                        self.record.record_outcome(Winner::None);
                     }
                     BoardState::Playing => {
                         self.state = GameState::Player2Turn;
@@ -88,6 +101,14 @@ impl<'a> Game<'a> {
 
     pub fn get_cellstate_char(&self, cell_index: usize) -> char {
         self.board.get_cellstate_char(cell_index)
+    }
+
+    pub fn get_game_state(&self) -> GameState {
+        self.state
+    }
+
+    pub fn get_winner(&self) -> Winner {
+        self.record.winner
     }
 
     pub fn ui_run(&mut self) {

@@ -196,6 +196,8 @@ Now, there is a higher level App structure that encapsulates the Game. The App
 is responsible for interacting with the UI. This includes all the menus
 that a user would interact with, and their corresponding state.
 
+tag: [`v6`](https://github.com/mikasaurus2/miktactoe/tree/v6)
+
 ### allow choosing human or computer players
 ### make web service to serve games to clients
 ### run web service on cloud

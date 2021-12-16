@@ -31,7 +31,7 @@ impl<'a> BasicAI<'a> {
     }
 
     pub fn get_valid_move(&mut self, board: &Board) -> CellCoord {
-        println!("{}'s turn.", self.name);
+        //println!("{}'s turn.", self.name);
 
         // Use a sleep here so it seems like the computer is thinking a bit.
         thread::sleep(time::Duration::from_secs(1));

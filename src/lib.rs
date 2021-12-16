@@ -7,7 +7,10 @@ mod common;
 mod game;
 mod player;
 
-use std::{fmt, io};
+use std::{fmt, io, thread::sleep};
+
+use common::CellCoord;
+use game::{Game, GameState};
 
 use tui::{
     backend::{Backend, CrosstermBackend},
@@ -81,16 +84,18 @@ impl<T> MenuList<T> {
     }
 }
 
-struct App {
+struct App<'a> {
     main_menu: MenuList<MainMenuEntry>,
     selected_cell: u8,
+    game: Game<'a>,
 }
 
-impl App {
-    fn new() -> App {
+impl<'a> App<'a> {
+    fn new() -> App<'a> {
         App {
             main_menu: MenuList::with_items(vec![MainMenuEntry::Play, MainMenuEntry::Exit]),
             selected_cell: 0,
+            game: Game::new(),
         }
     }
 
@@ -143,25 +148,35 @@ pub fn run_app() -> io::Result<()> {
     };
 
     if choice == MainMenuEntry::Play {
+        let mut game_state = app.game.run();
         loop {
             terminal.draw(|f| board_ui(f, &mut app))?;
 
-            if let Event::Key(key) = event::read()? {
-                match key.code {
-                    KeyCode::Char('q') => break,
-                    KeyCode::Up | KeyCode::Down | KeyCode::Left | KeyCode::Right => {
-                        app.update_selected_cell(&key.code);
+            if game_state == GameState::Player1Turn {
+                if let Event::Key(key) = event::read()? {
+                    match key.code {
+                        KeyCode::Char('q') => break,
+                        KeyCode::Up | KeyCode::Down | KeyCode::Left | KeyCode::Right => {
+                            app.update_selected_cell(&key.code);
+                        }
+                        KeyCode::Enter => {
+                            let player_move = CellCoord::new(
+                                usize::from(app.selected_cell / 3),
+                                usize::from(app.selected_cell % 3),
+                            );
+                            game_state = app.game.make_human_move(player_move);
+                            continue;
+                        }
+                        _ => {}
                     }
-                    KeyCode::Enter => {
-                        break;
-                    }
-                    _ => {}
                 }
+            } else if game_state == GameState::Player2Turn {
+                game_state = app.game.run();
+            } else {
+                break;
             }
         }
     }
-    //let mut game = game::Game::new();
-    //game.run();
     disable_raw_mode()?;
     execute!(
         terminal.backend_mut(),
@@ -236,6 +251,10 @@ fn board_ui<B: Backend>(f: &mut Frame<B>, app: &mut App) {
         )
         .split(chunks[1])[1];
 
+    // The block layout with TUI is a bit weird. The last block
+    // will try to fill the remaining space in the parent block.
+    // As a result, I added a fourth block for which I don't draw
+    // a border. That way, only the 3x3 board is displayed.
     let rows = Layout::default()
         .direction(Direction::Vertical)
         .constraints(
@@ -271,7 +290,11 @@ fn board_ui<B: Backend>(f: &mut Frame<B>, app: &mut App) {
                 Style::default().fg(Color::Red)
             };
 
-            let marker = List::new([ListItem::new(Span::raw(format!("{:^3}", "X")))]).block(
+            let marker = List::new([ListItem::new(Span::raw(format!(
+                "{:^3}",
+                app.game.get_cellstate_char(usize::from(cell_index))
+            )))])
+            .block(
                 Block::default()
                     .border_style(border_style)
                     .borders(Borders::ALL),

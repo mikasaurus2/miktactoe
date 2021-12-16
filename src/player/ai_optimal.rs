@@ -13,7 +13,7 @@ impl<'a> OptimalAI<'a> {
     }
 
     pub fn get_valid_move(&self, board: &Board) -> CellCoord {
-        println!("{}'s turn.", self.name);
+        //println!("{}'s turn.", self.name);
 
         // Use a sleep here so it seems like the computer is thinking a bit.
         thread::sleep(time::Duration::from_secs(1));
@@ -25,33 +25,33 @@ impl<'a> OptimalAI<'a> {
 
         // block opponent's winning move if they have one
         if let Some(cell_coord) = board.get_winning_move(Marker::opposite(self.marker)) {
-            println!("blocking a winning move");
+            //println!("blocking a winning move");
             return cell_coord;
         }
 
         // make a fork if possible
         let forking_moves = board.get_forking_move(self.marker);
         if !forking_moves.is_empty() {
-            println!("making a fork");
+            //println!("making a fork");
             return forking_moves[0];
         }
 
         // block opponent's fork
         let opp_forking_moves = board.get_forking_move(Marker::opposite(self.marker));
         if opp_forking_moves.len() == 1 {
-            println!("blocking forking move");
+            //println!("blocking forking move");
             return opp_forking_moves[0];
         }
 
         // force opponent to defend
         if let Some(cell_coord) = self.force_defending_move(&board, &opp_forking_moves) {
-            println!("forcing opponent defend");
+            //println!("forcing opponent defend");
             return cell_coord;
         }
 
         // play center
         if let Move::Valid = board.validate_move(CellCoord::new(1, 1)) {
-            println!("playing center");
+            //println!("playing center");
             return CellCoord::new(1, 1);
         }
 
@@ -61,13 +61,13 @@ impl<'a> OptimalAI<'a> {
 
         // play empty corner
         if let Some(cell_coord) = board.get_corner_move() {
-            println!("playing corner");
+            //println!("playing corner");
             return cell_coord;
         }
 
         // play empty edge
         if let Some(cell_coord) = board.get_edge_move() {
-            println!("playing edge");
+            //println!("playing edge");
             return cell_coord;
         }
 

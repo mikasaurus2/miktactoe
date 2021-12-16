@@ -36,7 +36,7 @@ impl<'a> RandomAI<'a> {
     // by providing a reference to the board as a method parameter. We can then
     // invoke validate_move().
     pub fn get_valid_move(&mut self, board: &Board) -> CellCoord {
-        println!("{}'s turn.", self.name);
+        //println!("{}'s turn.", self.name);
 
         // Use a sleep here so it seems like the computer is thinking a bit.
         thread::sleep(time::Duration::from_secs(1));

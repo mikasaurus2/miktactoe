@@ -44,24 +44,33 @@ impl Board {
         }
     }
 
-    pub fn display(&self) {
-        let get_cell_char = |&cell_state| match cell_state {
+    fn get_cell_char(&self, cell_state: &CellState) -> char {
+        match cell_state {
             CellState::X => 'X',
             CellState::O => 'O',
             CellState::Empty => '_',
-        };
+        }
+    }
+
+    pub fn display(&self) {
         println!(
             "\n{} {} {}\n{} {} {}\n{} {} {}\n",
-            get_cell_char(&self.cells[0][0]),
-            get_cell_char(&self.cells[0][1]),
-            get_cell_char(&self.cells[0][2]),
-            get_cell_char(&self.cells[1][0]),
-            get_cell_char(&self.cells[1][1]),
-            get_cell_char(&self.cells[1][2]),
-            get_cell_char(&self.cells[2][0]),
-            get_cell_char(&self.cells[2][1]),
-            get_cell_char(&self.cells[2][2])
+            self.get_cell_char(&self.cells[0][0]),
+            self.get_cell_char(&self.cells[0][1]),
+            self.get_cell_char(&self.cells[0][2]),
+            self.get_cell_char(&self.cells[1][0]),
+            self.get_cell_char(&self.cells[1][1]),
+            self.get_cell_char(&self.cells[1][2]),
+            self.get_cell_char(&self.cells[2][0]),
+            self.get_cell_char(&self.cells[2][1]),
+            self.get_cell_char(&self.cells[2][2])
         );
+    }
+
+    pub fn get_cellstate_char(&self, index: usize) -> char {
+        let row = index / 3;
+        let col = index % 3;
+        self.get_cell_char(&self.cells[row][col])
     }
 
     pub fn place_marker(&mut self, cell_coord: CellCoord, marker: Marker) {

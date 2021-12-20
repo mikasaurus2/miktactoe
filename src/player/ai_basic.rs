@@ -1,3 +1,4 @@
+use super::Player;
 use crate::board::Board;
 use crate::common::*;
 use rand::seq::SliceRandom;
@@ -29,8 +30,14 @@ impl<'a> BasicAI<'a> {
             move_set,
         }
     }
+}
 
-    pub fn get_valid_move(&mut self, board: &Board) -> CellCoord {
+impl<'a> Player for BasicAI<'a> {
+    fn get_marker(&self) -> Marker {
+        self.marker
+    }
+
+    fn get_valid_move(&mut self, board: &Board) -> CellCoord {
         //println!("{}'s turn.", self.name);
 
         // Use a sleep here so it seems like the computer is thinking a bit.

@@ -1,5 +1,6 @@
 use crate::board::Board;
 use crate::common::*;
+use super::Player;
 use std::io;
 
 #[derive(Debug)]
@@ -13,7 +14,14 @@ impl<'a> Human<'a> {
         Human { name, marker }
     }
 
-    pub fn get_valid_move(&self, board: &Board) -> CellCoord {
+}
+
+impl<'a> Player for Human<'a> {
+    fn get_marker(&self) -> Marker {
+        self.marker
+    }
+
+    fn get_valid_move(&mut self, board: &Board) -> CellCoord {
         loop {
             let mut input = String::new();
             println!("{}'s turn.", self.name);

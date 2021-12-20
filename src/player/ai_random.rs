@@ -1,9 +1,9 @@
+use super::Player;
 use crate::board::Board;
 use crate::common::*;
 use rand::seq::SliceRandom;
 use rand::thread_rng;
 use std::{thread, time};
-
 
 pub struct RandomAI<'a> {
     pub name: &'a str,
@@ -30,12 +30,18 @@ impl<'a> RandomAI<'a> {
             move_set,
         }
     }
+}
+
+impl<'a> Player for RandomAI<'a> {
+    fn get_marker(&self) -> Marker {
+        self.marker
+    }
 
     // The computer should be smart enough to always make valid moves. Initially,
     // we did move validation at the game level, but we can do that here instead
     // by providing a reference to the board as a method parameter. We can then
     // invoke validate_move().
-    pub fn get_valid_move(&mut self, board: &Board) -> CellCoord {
+    fn get_valid_move(&mut self, board: &Board) -> CellCoord {
         //println!("{}'s turn.", self.name);
 
         // Use a sleep here so it seems like the computer is thinking a bit.

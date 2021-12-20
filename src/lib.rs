@@ -9,8 +9,9 @@ mod player;
 
 use std::{fmt, io, thread::sleep};
 
-use common::CellCoord;
+use common::{CellCoord, Marker};
 use game::{Game, GameState, Winner};
+use player::*;
 
 use tui::{
     backend::{Backend, CrosstermBackend},
@@ -39,6 +40,14 @@ enum MainMenuEntry {
 }
 
 #[derive(Debug, PartialEq, Copy, Clone)]
+enum PlayerTypeEntry {
+    Human,
+    RandomComp,
+    BasicComp,
+    OptimalComp,
+}
+
+#[derive(Debug, PartialEq, Copy, Clone)]
 enum EndMenuEntry {
     PlayAgain,
     Exit,
@@ -49,6 +58,17 @@ enum EndMenuEntry {
 impl fmt::Display for MainMenuEntry {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(f, "{:?}", self)
+    }
+}
+
+impl fmt::Display for PlayerTypeEntry {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        match self {
+            PlayerTypeEntry::Human => write!(f, "Human"),
+            PlayerTypeEntry::RandomComp => write!(f, "Random Computer"),
+            PlayerTypeEntry::BasicComp => write!(f, "Basic Computer"),
+            PlayerTypeEntry::OptimalComp => write!(f, "Optimal Computer"),
+        }
     }
 }
 
@@ -101,6 +121,7 @@ impl<T> MenuList<T> {
 
 struct App<'a> {
     main_menu: MenuList<MainMenuEntry>,
+    player_select_menu: MenuList<PlayerTypeEntry>,
     end_menu: MenuList<EndMenuEntry>,
     selected_cell: u8,
     game: Game<'a>,
@@ -110,9 +131,24 @@ impl<'a> App<'a> {
     fn new() -> App<'a> {
         App {
             main_menu: MenuList::with_items(vec![MainMenuEntry::Play, MainMenuEntry::Exit]),
+            player_select_menu: MenuList::with_items(vec![
+                PlayerTypeEntry::Human,
+                PlayerTypeEntry::RandomComp,
+                PlayerTypeEntry::BasicComp,
+                PlayerTypeEntry::OptimalComp,
+            ]),
             end_menu: MenuList::with_items(vec![EndMenuEntry::PlayAgain, EndMenuEntry::Exit]),
             selected_cell: 0,
-            game: Game::new(),
+            // TODO: we're forced to create a game here unecessarily. We're gonna have
+            // to create the game once we know who the players are. So maybe we can clean
+            // this up a bit. Maybe the Game should be Box'ed instead of the players.
+            // That makes more sense. The Game doesn't start until user inputs who they're
+            // playing against. That way, we can use static dispatch within the Game code, by
+            // making the Game struct generic over Player types.
+            game: Game::new(
+                Box::new(human::Human::new("Mike", Marker::X)),
+                Box::new(ai_optimal::OptimalAI::new("Optimal", Marker::O)),
+            ),
         }
     }
 
@@ -121,6 +157,39 @@ impl<'a> App<'a> {
             Some(i) => self.main_menu.items[i],
             None => MainMenuEntry::Exit,
         }
+    }
+
+    fn handle_player_select_menu_enter(&mut self) {
+        match self.player_select_menu.state.selected() {
+            Some(i) => match self.player_select_menu.items[i] {
+                PlayerTypeEntry::Human => {
+                    // TODO: Human vs Human not yet supported.
+                    self.game = Game::new(
+                        Box::new(human::Human::new("Human1", Marker::X)),
+                        Box::new(ai_random::RandomAI::new("Random", Marker::O)),
+                    );
+                }
+                PlayerTypeEntry::RandomComp => {
+                    self.game = Game::new(
+                        Box::new(human::Human::new("Human1", Marker::X)),
+                        Box::new(ai_random::RandomAI::new("Random", Marker::O)),
+                    );
+                }
+                PlayerTypeEntry::BasicComp => {
+                    self.game = Game::new(
+                        Box::new(human::Human::new("Human1", Marker::X)),
+                        Box::new(ai_basic::BasicAI::new("Basic", Marker::O)),
+                    );
+                }
+                PlayerTypeEntry::OptimalComp => {
+                    self.game = Game::new(
+                        Box::new(human::Human::new("Human1", Marker::X)),
+                        Box::new(ai_optimal::OptimalAI::new("Optimal", Marker::O)),
+                    );
+                }
+            },
+            None => {}
+        };
     }
 
     fn handle_end_menu_enter(&self) -> EndMenuEntry {
@@ -149,7 +218,7 @@ impl<'a> App<'a> {
     }
 
     fn restart_game(&mut self) {
-        self.game = Game::new();
+        self.game.reset();
     }
 }
 
@@ -171,11 +240,24 @@ pub fn run_app() -> io::Result<()> {
                 KeyCode::Up => app.main_menu.previous(),
                 KeyCode::Enter => break app.handle_main_menu_enter(),
                 _ => {}
-            }
+            };
         }
     };
 
     if choice == MainMenuEntry::Play {
+        loop {
+            terminal.draw(|f| player_select_ui(f, &mut app))?;
+
+            if let Event::Key(key) = event::read()? {
+                match key.code {
+                    KeyCode::Down => app.player_select_menu.next(),
+                    KeyCode::Up => app.player_select_menu.previous(),
+                    KeyCode::Enter => break app.handle_player_select_menu_enter(),
+                    _ => {}
+                }
+            }
+        }
+
         loop {
             let mut game_state = app.game.run();
             let choice = loop {
@@ -271,6 +353,49 @@ fn menu_ui<B: Backend>(f: &mut Frame<B>, app: &mut App) {
         .highlight_style(Style::default().add_modifier(Modifier::BOLD))
         .highlight_symbol(">> ");
     f.render_stateful_widget(items, center_chunks[1], &mut app.main_menu.state)
+}
+
+fn player_select_ui<B: Backend>(f: &mut Frame<B>, app: &mut App) {
+    let chunks = Layout::default()
+        .direction(Direction::Horizontal)
+        .constraints(
+            [
+                Constraint::Percentage(33),
+                Constraint::Percentage(33),
+                Constraint::Percentage(33),
+            ]
+            .as_ref(),
+        )
+        .split(f.size());
+
+    let center_chunks = Layout::default()
+        .direction(Direction::Vertical)
+        .constraints(
+            [
+                Constraint::Percentage(33),
+                Constraint::Percentage(33),
+                Constraint::Percentage(33),
+            ]
+            .as_ref(),
+        )
+        .split(chunks[1]);
+
+    let items: Vec<ListItem> = app
+        .player_select_menu
+        .items
+        .iter()
+        .map(|&i| ListItem::new(Span::raw(i.to_string())).style(Style::default().fg(Color::White)))
+        .collect();
+
+    let items = List::new(items)
+        .block(
+            Block::default()
+                .borders(Borders::ALL)
+                .title("Select Opponent"),
+        )
+        .highlight_style(Style::default().add_modifier(Modifier::BOLD))
+        .highlight_symbol(">> ");
+    f.render_stateful_widget(items, center_chunks[1], &mut app.player_select_menu.state)
 }
 
 fn board_ui<B: Backend>(f: &mut Frame<B>, app: &mut App) {

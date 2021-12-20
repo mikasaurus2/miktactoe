@@ -1,13 +1,14 @@
 use crate::board::{Board, BoardState};
 use crate::common::{CellCoord, Marker, Move};
+use crate::player::Player;
 use crate::player::{
     ai_basic::BasicAI, ai_forking::ForkingAI, ai_optimal::OptimalAI, ai_random::RandomAI,
     human::Human,
 };
 
 pub struct Game<'a> {
-    player1: Human<'a>,
-    player2: OptimalAI<'a>,
+    player1: Box<dyn Player>,
+    player2: Box<dyn Player>,
     board: Board,
     record: Record<'a>,
     state: GameState,
@@ -35,13 +36,12 @@ pub enum GameState {
 }
 
 impl<'a> Game<'a> {
-    pub fn new() -> Game<'a> {
+    pub fn new(player1: Box<dyn Player>, player2: Box<dyn Player>) -> Game<'a> {
         Game {
-            player1: Human::new("Mike", Marker::X),
-            player2: OptimalAI::new("Optimal2", Marker::O),
-            //player1: Human::new("steph", Marker::X),
-            //player2: Human::new("mike", Marker::O),
+            player1,
+            player2,
             board: Board::new(),
+            // TODO: fix the names on the record. These are just hardcoded.
             record: Record::new("steph", "mike"),
             state: GameState::Player1Turn,
         }
@@ -52,9 +52,13 @@ impl<'a> Game<'a> {
             GameState::Player1Turn => GameState::Player1Turn,
             GameState::Player2Turn => {
                 let comp_move = self.player2.get_valid_move(&self.board);
-                self.board.place_marker(comp_move, self.player2.marker);
+                self.board
+                    .place_marker(comp_move, self.player2.get_marker());
                 self.record.record_move(comp_move);
-                match self.board.check_board_state(comp_move, self.player2.marker) {
+                match self
+                    .board
+                    .check_board_state(comp_move, self.player2.get_marker())
+                {
                     BoardState::Win => {
                         self.state = GameState::Done;
                         self.record.record_outcome(Winner::Player2);
@@ -76,11 +80,12 @@ impl<'a> Game<'a> {
     pub fn make_human_move(&mut self, player_move: CellCoord) -> GameState {
         if self.state == GameState::Player1Turn {
             if self.board.validate_move(player_move) == Move::Valid {
-                self.board.place_marker(player_move, self.player1.marker);
+                self.board
+                    .place_marker(player_move, self.player1.get_marker());
                 self.record.record_move(player_move);
                 match self
                     .board
-                    .check_board_state(player_move, self.player1.marker)
+                    .check_board_state(player_move, self.player1.get_marker())
                 {
                     BoardState::Win => {
                         self.state = GameState::Done;
@@ -111,25 +116,35 @@ impl<'a> Game<'a> {
         self.record.winner
     }
 
+    pub fn reset(&mut self) {
+            //self.player1.reset();
+            self.player2 = Box::new(OptimalAI::new("Optimal", Marker::O));
+            self.board = Board::new();
+            // TODO: fix the names on the record. These are just hardcoded.
+            self.record = Record::new("steph", "mike");
+            self.state = GameState::Player1Turn;
+    }
+
     pub fn ui_run(&mut self) {
         self.board.display();
         loop {
             let mut player_move = self.player1.get_valid_move(&self.board);
-            self.board.place_marker(player_move, self.player1.marker);
+            self.board
+                .place_marker(player_move, self.player1.get_marker());
             self.record.record_move(player_move);
             //self.board.print_info();
             self.board.display();
             match self
                 .board
-                .check_board_state(player_move, self.player1.marker)
+                .check_board_state(player_move, self.player1.get_marker())
             {
                 BoardState::Win => {
-                    println!("{} won!", self.player1.name);
+                    //println!("{} won!", self.player1.name);
                     self.record.record_outcome(Winner::Player1);
                     break;
                 }
                 BoardState::Tie => {
-                    println!("The game was a tie!");
+                    //println!("The game was a tie!");
                     self.record.record_outcome(Winner::None);
                     break;
                 }
@@ -137,21 +152,22 @@ impl<'a> Game<'a> {
             }
 
             player_move = self.player2.get_valid_move(&self.board);
-            self.board.place_marker(player_move, self.player2.marker);
+            self.board
+                .place_marker(player_move, self.player2.get_marker());
             self.record.record_move(player_move);
             //self.board.print_info();
             self.board.display();
             match self
                 .board
-                .check_board_state(player_move, self.player2.marker)
+                .check_board_state(player_move, self.player2.get_marker())
             {
                 BoardState::Win => {
-                    println!("{} won!", self.player2.name);
+                    //println!("{} won!", self.player2.name);
                     self.record.record_outcome(Winner::Player2);
                     break;
                 }
                 BoardState::Tie => {
-                    println!("The game was a tie!");
+                    //println!("The game was a tie!");
                     self.record.record_outcome(Winner::None);
                     break;
                 }

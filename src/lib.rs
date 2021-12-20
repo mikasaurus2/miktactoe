@@ -41,6 +41,7 @@ enum MainMenuEntry {
 
 #[derive(Debug, PartialEq, Copy, Clone)]
 enum PlayerTypeEntry {
+    #[allow(dead_code)]
     Human,
     RandomComp,
     BasicComp,
@@ -132,7 +133,7 @@ impl App {
         App {
             main_menu: MenuList::with_items(vec![MainMenuEntry::Play, MainMenuEntry::Exit]),
             player_select_menu: MenuList::with_items(vec![
-                PlayerTypeEntry::Human,
+                //PlayerTypeEntry::Human,
                 PlayerTypeEntry::RandomComp,
                 PlayerTypeEntry::BasicComp,
                 PlayerTypeEntry::OptimalComp,

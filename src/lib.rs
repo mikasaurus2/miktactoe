@@ -7,7 +7,7 @@ mod common;
 mod game;
 mod player;
 
-use std::{fmt, io, thread::sleep};
+use std::{fmt, io};
 
 use common::{CellCoord, Marker};
 use game::{Game, GameState, TicTacToe, Winner};
@@ -17,8 +17,8 @@ use tui::{
     backend::{Backend, CrosstermBackend},
     layout::{Constraint, Direction, Layout},
     style::{Color, Modifier, Style},
-    text::{Span, Spans},
-    widgets::{Block, Borders, List, ListItem, ListState, Widget},
+    text::Span,
+    widgets::{Block, Borders, List, ListItem, ListState},
     Frame, Terminal,
 };
 

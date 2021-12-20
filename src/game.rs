@@ -1,10 +1,6 @@
 use crate::board::{Board, BoardState};
 use crate::common::{CellCoord, Marker, Move};
 use crate::player::Player;
-use crate::player::{
-    ai_basic::BasicAI, ai_forking::ForkingAI, ai_optimal::OptimalAI, ai_random::RandomAI,
-    human::Human,
-};
 
 #[derive(PartialEq, Copy, Clone)]
 pub enum GameState {
@@ -156,6 +152,7 @@ impl<'a> Record<'a> {
         self.winner = winner;
     }
 
+    #[allow(dead_code)]
     fn print_game_history(&self) {
         println!("Player1 ({})", self.player1);
         println!("Player2 ({})", self.player2);

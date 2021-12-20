@@ -1,6 +1,5 @@
 use crate::common::*;
 use rand::seq::SliceRandom;
-use rand::thread_rng;
 use std::collections::{HashMap, HashSet};
 
 pub struct Board {
@@ -50,21 +49,6 @@ impl Board {
             CellState::O => 'O',
             CellState::Empty => '_',
         }
-    }
-
-    pub fn display(&self) {
-        println!(
-            "\n{} {} {}\n{} {} {}\n{} {} {}\n",
-            self.get_cell_char(&self.cells[0][0]),
-            self.get_cell_char(&self.cells[0][1]),
-            self.get_cell_char(&self.cells[0][2]),
-            self.get_cell_char(&self.cells[1][0]),
-            self.get_cell_char(&self.cells[1][1]),
-            self.get_cell_char(&self.cells[1][2]),
-            self.get_cell_char(&self.cells[2][0]),
-            self.get_cell_char(&self.cells[2][1]),
-            self.get_cell_char(&self.cells[2][2])
-        );
     }
 
     pub fn get_cellstate_char(&self, index: usize) -> char {
@@ -330,10 +314,6 @@ impl Board {
     pub fn get_edge_move(&self) -> Option<CellCoord> {
         self.metadata.get_edge_coords()
     }
-
-    pub fn print_info(&self) {
-        self.metadata.print();
-    }
 }
 
 struct BoardMetadata {
@@ -488,6 +468,7 @@ impl BoardMetadata {
         self.o_potential_forks.clear();
     }
 
+    #[allow(dead_code)]
     pub fn print(&self) {
         for i in vec![Marker::X, Marker::O] {
             if let Some(winning_moves) = self.winning_moves.get(&i) {

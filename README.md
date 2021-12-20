@@ -227,5 +227,6 @@ This necessitates using `Game` as a trait, and renaming our current
 This also benefits future changes if we decide to implement different
 game types.
 
+tag: [`v7`](https://github.com/mikasaurus2/miktactoe/tree/v7)
 
 ### make service to serve games to clients

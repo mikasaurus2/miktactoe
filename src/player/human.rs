@@ -9,14 +9,11 @@ pub struct Human<'a> {
     pub marker: Marker,
 }
 
-impl<'a> Human<'a> {
-    pub fn new(name: &str, marker: Marker) -> Human {
+impl<'a> Player<'a> for Human<'a> {
+    fn new(name: &'a str, marker: Marker) -> Human<'a> {
         Human { name, marker }
     }
 
-}
-
-impl<'a> Player for Human<'a> {
     fn get_marker(&self) -> Marker {
         self.marker
     }

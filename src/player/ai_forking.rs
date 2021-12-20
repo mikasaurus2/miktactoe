@@ -16,8 +16,8 @@ pub struct ForkingAI<'a> {
 //   2. block an opponents winning move
 //   3. create a fork if possible
 //   3. move randomly
-impl<'a> ForkingAI<'a> {
-    pub fn new(name: &str, marker: Marker) -> ForkingAI {
+impl<'a> Player<'a> for ForkingAI<'a> {
+    fn new(name: &'a str, marker: Marker) -> ForkingAI {
         let mut move_set: Vec<CellCoord> = itertools::iproduct!(0..3, 0..3)
             .map(|(row, column)| CellCoord::new(row, column))
             .collect();
@@ -31,9 +31,7 @@ impl<'a> ForkingAI<'a> {
             move_set,
         }
     }
-}
 
-impl<'a> Player for ForkingAI<'a> {
     fn get_marker(&self) -> Marker {
         self.marker
     }

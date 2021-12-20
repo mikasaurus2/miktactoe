@@ -32,7 +32,26 @@ impl<'a> RandomAI<'a> {
     }
 }
 
-impl<'a> Player for RandomAI<'a> {
+impl<'a> Player<'a> for RandomAI<'a> {
+    fn new(name: &'a str, marker: Marker) -> RandomAI {
+        // To create the RandomAI's move set, we first use iproduct! macro
+        // to make a cartesian product of our row and column ranges. This enumerates
+        // all possible cell coordinates. We collect() it to form a vector of these
+        // coordinates, and then randomly shuffle it.
+        let mut move_set: Vec<CellCoord> = itertools::iproduct!(0..3, 0..3)
+            .map(|(row, column)| CellCoord::new(row, column))
+            .collect();
+
+        let mut rng = thread_rng();
+        move_set.shuffle(&mut rng);
+
+        RandomAI {
+            name,
+            marker,
+            move_set,
+        }
+    }
+
     fn get_marker(&self) -> Marker {
         self.marker
     }

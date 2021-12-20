@@ -6,9 +6,25 @@ use crate::player::{
     human::Human,
 };
 
-pub struct Game<'a> {
-    player1: Box<dyn Player>,
-    player2: Box<dyn Player>,
+#[derive(PartialEq, Copy, Clone)]
+pub enum GameState {
+    Player1Turn,
+    Player2Turn,
+    Done,
+}
+
+pub trait Game {
+    fn run(&mut self) -> GameState;
+    fn make_human_move(&mut self, player_move: CellCoord) -> GameState;
+    fn get_game_state(&self) -> GameState;
+    fn get_winner(&self) -> Winner;
+    fn get_cellstate_char(&self, cell_index: usize) -> char;
+    fn reset(&mut self);
+}
+
+pub struct TicTacToe<'a, P1, P2> {
+    player1: P1,
+    player2: P2,
     board: Board,
     record: Record<'a>,
     state: GameState,
@@ -28,16 +44,9 @@ struct Record<'a> {
     move_history: Vec<CellCoord>,
 }
 
-#[derive(PartialEq, Copy, Clone)]
-pub enum GameState {
-    Player1Turn,
-    Player2Turn,
-    Done,
-}
-
-impl<'a> Game<'a> {
-    pub fn new(player1: Box<dyn Player>, player2: Box<dyn Player>) -> Game<'a> {
-        Game {
+impl<'a, P1: Player<'a>, P2: Player<'a>> TicTacToe<'a, P1, P2> {
+    pub fn new(player1: P1, player2: P2) -> TicTacToe<'a, P1, P2> {
+        TicTacToe {
             player1,
             player2,
             board: Board::new(),
@@ -46,8 +55,11 @@ impl<'a> Game<'a> {
             state: GameState::Player1Turn,
         }
     }
+}
 
-    pub fn run(&mut self) -> GameState {
+impl<'a, P1: Player<'a>, P2: Player<'a>> Game for TicTacToe<'a, P1, P2> {
+
+    fn run(&mut self) -> GameState {
         match self.state {
             GameState::Player1Turn => GameState::Player1Turn,
             GameState::Player2Turn => {
@@ -77,7 +89,7 @@ impl<'a> Game<'a> {
         }
     }
 
-    pub fn make_human_move(&mut self, player_move: CellCoord) -> GameState {
+    fn make_human_move(&mut self, player_move: CellCoord) -> GameState {
         if self.state == GameState::Player1Turn {
             if self.board.validate_move(player_move) == Move::Valid {
                 self.board
@@ -104,77 +116,25 @@ impl<'a> Game<'a> {
         self.state
     }
 
-    pub fn get_cellstate_char(&self, cell_index: usize) -> char {
+    fn get_cellstate_char(&self, cell_index: usize) -> char {
         self.board.get_cellstate_char(cell_index)
     }
 
-    pub fn get_game_state(&self) -> GameState {
+    fn get_game_state(&self) -> GameState {
         self.state
     }
 
-    pub fn get_winner(&self) -> Winner {
+    fn get_winner(&self) -> Winner {
         self.record.winner
     }
 
-    pub fn reset(&mut self) {
-            //self.player1.reset();
-            self.player2 = Box::new(OptimalAI::new("Optimal", Marker::O));
-            self.board = Board::new();
-            // TODO: fix the names on the record. These are just hardcoded.
-            self.record = Record::new("steph", "mike");
-            self.state = GameState::Player1Turn;
-    }
-
-    pub fn ui_run(&mut self) {
-        self.board.display();
-        loop {
-            let mut player_move = self.player1.get_valid_move(&self.board);
-            self.board
-                .place_marker(player_move, self.player1.get_marker());
-            self.record.record_move(player_move);
-            //self.board.print_info();
-            self.board.display();
-            match self
-                .board
-                .check_board_state(player_move, self.player1.get_marker())
-            {
-                BoardState::Win => {
-                    //println!("{} won!", self.player1.name);
-                    self.record.record_outcome(Winner::Player1);
-                    break;
-                }
-                BoardState::Tie => {
-                    //println!("The game was a tie!");
-                    self.record.record_outcome(Winner::None);
-                    break;
-                }
-                BoardState::Playing => (),
-            }
-
-            player_move = self.player2.get_valid_move(&self.board);
-            self.board
-                .place_marker(player_move, self.player2.get_marker());
-            self.record.record_move(player_move);
-            //self.board.print_info();
-            self.board.display();
-            match self
-                .board
-                .check_board_state(player_move, self.player2.get_marker())
-            {
-                BoardState::Win => {
-                    //println!("{} won!", self.player2.name);
-                    self.record.record_outcome(Winner::Player2);
-                    break;
-                }
-                BoardState::Tie => {
-                    //println!("The game was a tie!");
-                    self.record.record_outcome(Winner::None);
-                    break;
-                }
-                BoardState::Playing => (),
-            }
-        }
-        self.record.print_game_history();
+    fn reset(&mut self) {
+        self.player1 = P1::new("Human", Marker::X);
+        self.player2 = P2::new("Computer", Marker::O);
+        self.board = Board::new();
+        // TODO: fix the names on the record. These are just hardcoded.
+        self.record = Record::new("steph", "mike");
+        self.state = GameState::Player1Turn;
     }
 }
 

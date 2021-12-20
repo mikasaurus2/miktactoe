@@ -9,10 +9,6 @@ pub struct OptimalAI<'a> {
 }
 
 impl<'a> OptimalAI<'a> {
-    pub fn new(name: &str, marker: Marker) -> OptimalAI {
-        OptimalAI { name, marker }
-    }
-
     fn force_defending_move(
         &self,
         board: &Board,
@@ -91,7 +87,11 @@ impl<'a> OptimalAI<'a> {
     }
 }
 
-impl<'a> Player for OptimalAI<'a> {
+impl<'a> Player<'a> for OptimalAI<'a> {
+    fn new(name: &'a str, marker: Marker) -> OptimalAI {
+        OptimalAI { name, marker }
+    }
+
     fn get_marker(&self) -> Marker {
         self.marker
     }

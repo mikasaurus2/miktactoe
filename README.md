@@ -198,6 +198,34 @@ that a user would interact with, and their corresponding state.
 
 tag: [`v6`](https://github.com/mikasaurus2/miktactoe/tree/v6)
 
-### allow choosing human or computer players
-### make web service to serve games to clients
-### run web service on cloud
+### allow human player to choose different types of computer opponent
+A text user interface will allow the human player to choose
+which AI opponent they'd like to play.
+
+This requires modifying how the Game stores the players. We no
+longer know at compile time who is playing. We'll need to use
+Rust trait objects to handle this.
+
+Initially, I changed the Game's player variables to be of type
+`Box<dyn Player>` where `Player` is a trait that is implemented
+by all the concrete player types. This solved the issue of creating
+the Game once the human user selected which opponent they wanted.
+However, this made resetting the game (when the player wants to play
+again) difficult. The reason is that the Game does not know which Player
+object is actually being used.
+
+To overcome this, I changed the `App` struct to have a `Box<dyn Game>`
+member variable instead of a directo `Game` structure. This way, we
+can make the `Game` struct generic over the Player types. The `App`
+will have the `Game` as a Box'ed trait object, which will be created
+dynamically once we know the players.
+
+This necessitates using `Game` as a trait, and renaming our current
+`Game` struct to `TicTacToe`, and implementing the `Game` trait for
+`TicTacToe`.
+
+This also benefits future changes if we decide to implement different
+game types.
+
+
+### make service to serve games to clients

@@ -10,7 +10,7 @@ mod player;
 use std::{fmt, io, thread::sleep};
 
 use common::{CellCoord, Marker};
-use game::{Game, GameState, Winner};
+use game::{Game, GameState, TicTacToe, Winner};
 use player::*;
 
 use tui::{
@@ -119,16 +119,16 @@ impl<T> MenuList<T> {
     }
 }
 
-struct App<'a> {
+struct App {
     main_menu: MenuList<MainMenuEntry>,
     player_select_menu: MenuList<PlayerTypeEntry>,
     end_menu: MenuList<EndMenuEntry>,
     selected_cell: u8,
-    game: Game<'a>,
+    game: Box<dyn Game>,
 }
 
-impl<'a> App<'a> {
-    fn new() -> App<'a> {
+impl App {
+    fn new() -> App {
         App {
             main_menu: MenuList::with_items(vec![MainMenuEntry::Play, MainMenuEntry::Exit]),
             player_select_menu: MenuList::with_items(vec![
@@ -145,10 +145,10 @@ impl<'a> App<'a> {
             // That makes more sense. The Game doesn't start until user inputs who they're
             // playing against. That way, we can use static dispatch within the Game code, by
             // making the Game struct generic over Player types.
-            game: Game::new(
-                Box::new(human::Human::new("Mike", Marker::X)),
-                Box::new(ai_optimal::OptimalAI::new("Optimal", Marker::O)),
-            ),
+            game: Box::new(TicTacToe::new(
+                human::Human::new("Mike", Marker::X),
+                ai_optimal::OptimalAI::new("Optimal", Marker::O),
+            )),
         }
     }
 
@@ -163,29 +163,25 @@ impl<'a> App<'a> {
         match self.player_select_menu.state.selected() {
             Some(i) => match self.player_select_menu.items[i] {
                 PlayerTypeEntry::Human => {
-                    // TODO: Human vs Human not yet supported.
-                    self.game = Game::new(
-                        Box::new(human::Human::new("Human1", Marker::X)),
-                        Box::new(ai_random::RandomAI::new("Random", Marker::O)),
-                    );
+                    todo!("Human vs Human is not yet supported");
                 }
                 PlayerTypeEntry::RandomComp => {
-                    self.game = Game::new(
-                        Box::new(human::Human::new("Human1", Marker::X)),
-                        Box::new(ai_random::RandomAI::new("Random", Marker::O)),
-                    );
+                    self.game = Box::new(TicTacToe::new(
+                        human::Human::new("Human", Marker::X),
+                        ai_random::RandomAI::new("Random", Marker::O),
+                    ));
                 }
                 PlayerTypeEntry::BasicComp => {
-                    self.game = Game::new(
-                        Box::new(human::Human::new("Human1", Marker::X)),
-                        Box::new(ai_basic::BasicAI::new("Basic", Marker::O)),
-                    );
+                    self.game = Box::new(TicTacToe::new(
+                        human::Human::new("Human", Marker::X),
+                        ai_basic::BasicAI::new("Basic", Marker::O),
+                    ));
                 }
                 PlayerTypeEntry::OptimalComp => {
-                    self.game = Game::new(
-                        Box::new(human::Human::new("Human1", Marker::X)),
-                        Box::new(ai_optimal::OptimalAI::new("Optimal", Marker::O)),
-                    );
+                    self.game = Box::new(TicTacToe::new(
+                        human::Human::new("Human", Marker::X),
+                        ai_optimal::OptimalAI::new("Optimal", Marker::O),
+                    ));
                 }
             },
             None => {}

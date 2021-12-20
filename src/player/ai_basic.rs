@@ -15,8 +15,8 @@ pub struct BasicAI<'a> {
 //   1. make a winning move
 //   2. block an opponents winning move
 //   3. move randomly
-impl<'a> BasicAI<'a> {
-    pub fn new(name: &str, marker: Marker) -> BasicAI {
+impl<'a> Player<'a> for BasicAI<'a> {
+    fn new(name: &'a str, marker: Marker) -> BasicAI {
         let mut move_set: Vec<CellCoord> = itertools::iproduct!(0..3, 0..3)
             .map(|(row, column)| CellCoord::new(row, column))
             .collect();
@@ -30,9 +30,7 @@ impl<'a> BasicAI<'a> {
             move_set,
         }
     }
-}
 
-impl<'a> Player for BasicAI<'a> {
     fn get_marker(&self) -> Marker {
         self.marker
     }

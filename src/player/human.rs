@@ -18,6 +18,10 @@ impl<'a> Player<'a> for Human<'a> {
         self.marker
     }
 
+    fn get_name(&self) -> &'a str {
+        self.name
+    }
+
     fn get_valid_move(&mut self, board: &Board) -> CellCoord {
         loop {
             let mut input = String::new();

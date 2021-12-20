@@ -56,6 +56,10 @@ impl<'a> Player<'a> for RandomAI<'a> {
         self.marker
     }
 
+    fn get_name(&self) -> &'a str {
+        self.name
+    }
+
     // The computer should be smart enough to always make valid moves. Initially,
     // we did move validation at the game level, but we can do that here instead
     // by providing a reference to the board as a method parameter. We can then

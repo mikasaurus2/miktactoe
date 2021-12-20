@@ -139,14 +139,14 @@ impl App {
             ]),
             end_menu: MenuList::with_items(vec![EndMenuEntry::PlayAgain, EndMenuEntry::Exit]),
             selected_cell: 0,
-            // TODO: we're forced to create a game here unecessarily. We're gonna have
-            // to create the game once we know who the players are. So maybe we can clean
-            // this up a bit. Maybe the Game should be Box'ed instead of the players.
-            // That makes more sense. The Game doesn't start until user inputs who they're
-            // playing against. That way, we can use static dispatch within the Game code, by
-            // making the Game struct generic over Player types.
+            // We don't want to create th Game object when we start the App, because the user
+            // hasn't selected their opponent yet. We can't have an uninitialized Box, so
+            // we should use Option here.
+            // If we do that though, we'd have to place `expect()` calls on ever invocation
+            // of a function through the `game` member variable. And also `as_ref()`. This
+            // muddies the code quite a bit.
             game: Box::new(TicTacToe::new(
-                human::Human::new("Mike", Marker::X),
+                human::Human::new("Human", Marker::X),
                 ai_optimal::OptimalAI::new("Optimal", Marker::O),
             )),
         }
@@ -429,13 +429,14 @@ fn board_ui<B: Backend>(f: &mut Frame<B>, app: &mut App) {
             .split(left_box);
 
         let text = match app.game.get_winner() {
+            // TODO: Once we figure out how to use names, we should indicate who won
+            // by name. This is correct, but pretty generic.
             Winner::Player1 => "Player 1 Won!",
             Winner::Player2 => "Player 2 Won!",
             Winner::None => "The game was a tie!",
         };
         let end_prompt = List::new([ListItem::new(Span::raw(text))]).block(
             Block::default()
-                //.border_style(Style::default().fg(Color::Blue))
                 .borders(Borders::ALL),
         );
         f.render_widget(end_prompt, left_chunks[0]);

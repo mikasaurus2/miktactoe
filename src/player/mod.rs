@@ -17,4 +17,5 @@ pub trait Player<'a> {
     fn new(name: &'a str, marker: Marker) -> Self;
     fn get_valid_move(&mut self, board: &Board) -> CellCoord;
     fn get_marker(&self) -> Marker;
+    fn get_name(&self) -> &'a str;
 }

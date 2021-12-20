@@ -43,11 +43,10 @@ struct Record<'a> {
 impl<'a, P1: Player<'a>, P2: Player<'a>> TicTacToe<'a, P1, P2> {
     pub fn new(player1: P1, player2: P2) -> TicTacToe<'a, P1, P2> {
         TicTacToe {
+            record: Record::new(player1.get_name(), player2.get_name()),
             player1,
             player2,
             board: Board::new(),
-            // TODO: fix the names on the record. These are just hardcoded.
-            record: Record::new("steph", "mike"),
             state: GameState::Player1Turn,
         }
     }
@@ -125,11 +124,10 @@ impl<'a, P1: Player<'a>, P2: Player<'a>> Game for TicTacToe<'a, P1, P2> {
     }
 
     fn reset(&mut self) {
-        self.player1 = P1::new("Human", Marker::X);
-        self.player2 = P2::new("Computer", Marker::O);
+        self.player1 = P1::new(self.player1.get_name(), Marker::X);
+        self.player2 = P2::new(self.player2.get_name(), Marker::O);
         self.board = Board::new();
-        // TODO: fix the names on the record. These are just hardcoded.
-        self.record = Record::new("steph", "mike");
+        self.record = Record::new(self.player1.get_name(), self.player2.get_name());
         self.state = GameState::Player1Turn;
     }
 }

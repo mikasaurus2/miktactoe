@@ -36,6 +36,10 @@ impl<'a> Player<'a> for ForkingAI<'a> {
         self.marker
     }
 
+    fn get_name(&self) -> &'a str {
+        self.name
+    }
+
     fn get_valid_move(&mut self, board: &Board) -> CellCoord {
         //println!("{}'s turn.", self.name);
 
